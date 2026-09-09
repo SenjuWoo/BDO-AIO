@@ -34,6 +34,11 @@ if ($injectorAst.Extent.Text -notmatch '\.WaitForExit\(5000\)' -or
     $injectorAst.Extent.Text -notmatch 'still saving PAZ archives') {
     throw 'Run-MetaInjector does not expose a five-second progress heartbeat.'
 }
+if ($injectorAst.Extent.Text -notmatch 'Get-PazStatusReport' -or
+    $injectorAst.Extent.Text -notmatch "meta\.state.*MODDED" -or
+    $injectorAst.Extent.Text -notmatch 'Run Meta Injector again anyway') {
+    throw 'Run-MetaInjector does not guard against an accidental repeat on a MODDED meta.'
+}
 
 $reportFunctionAst = $ast.Find({
     param($node)

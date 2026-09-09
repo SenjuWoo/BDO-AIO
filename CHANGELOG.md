@@ -12,6 +12,8 @@
   verification, stage planning, and PartCut planning are about 15–18% faster.
 - The Meta Injector wait now shows a five-second progress heartbeat and reports its
   elapsed archive-save time when the external tool closes.
+- The launcher now warns and defaults to cancel when the live meta is already MODDED,
+  preventing accidental repeat archive saves while preserving an explicit re-run.
 
 ## 2.4.2 - Catch a rolled-back client version before it wipes your mods
 

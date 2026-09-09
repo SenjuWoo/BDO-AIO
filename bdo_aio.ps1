@@ -2185,6 +2185,17 @@ function Run-MetaInjector {
         return
     }
 
+    $existingStatus = Get-PazStatusReport -PazFolder $paz
+    if ($existingStatus -and [string]$existingStatus.meta.state -eq 'MODDED') {
+        Write-Warn 'The current pad00000.meta is already MODDED.'
+        Write-Info 'Running Meta Injector again can append another PAZ set and repeat the long archive-save step.'
+        if (-not (Read-YesNo 'Run Meta Injector again anyway?' $false)) {
+            Write-Info 'Cancelled before backup, stage building, or external injection.'
+            Pause-Any
+            return
+        }
+    }
+
     $runId = [guid]::NewGuid().ToString('N')
     $runStarted = [DateTime]::UtcNow
     $reportDir = Join-Path $Script:Root 'logs'
