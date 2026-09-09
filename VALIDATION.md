@@ -45,3 +45,39 @@ REMOTE RELEASE: PASS (public asset downloaded, checksum matched, 7-Zip retest pa
 UNRESOLVED: cross-class and outfit appearance requires in-game user testing
 FINAL: PASS (tool-validated; runtime appearance pending)
 ```
+
+## Local pending validation - stale-state guard and injector observability
+
+Date: 2026-09-09
+
+### Scope
+
+- Version-bound vanilla snapshot classification and backup refusal.
+- Live-meta default for per-outfit PartCut research.
+- Per-run Meta Injector JSON report wiring and timing fields.
+- No live PAZ, deployed source, or user configuration writes.
+
+### Commands and results
+
+| Command | Exit | Result |
+|---|---:|---|
+| `& 'C:\\Users\\karlo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m unittest discover -s tools\\bdo_meta -p test_*.py -v` | 0 | 109 Python tests passed; 6 skipped because the optional Midnight nude pack was absent. |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\bdo_meta\\test_body_size_config.ps1` | 0 | Existing body-size/config suite passed. |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\bdo_meta\\test_config_roundtrip.ps1` | 0 | Existing config persistence suite passed. |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\bdo_meta\\test_launcher_static.ps1` | 0 | PowerShell 5.1 parse/call-graph/variable checks passed. |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\bdo_meta\\test_meta_inject_launcher.ps1` | 0 | Structured report round-trip and stage-builder argument isolation passed. |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\bdo_meta\\test_pubic_config.ps1` | 0 | Existing pubic configuration suite passed. |
+| `& 'C:\\Users\\karlo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' tools\\bdo_meta\\paz_status_scan.py --paz 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Black Desert Online\\Paz' --json` | 0 | Correctly reported live client 3435 vs AIO snapshot 3418 as `STALE_BACKUP / UNKNOWN`. |
+| `& 'C:\\Users\\karlo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' tools\\bdo_meta\\partcut_recut.py --xml 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Black Desert Online\\Paz\\files_to_patch\\_PartCutGen\\character\\partcutdesc.xml' --paz 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Black Desert Online\\Paz' --group PEW_Upperbody --folder '1_Pc/3_PEW/Armor/9_Upperbody' --keep 'pew_03_ub_0002*' --dry-run` | 0 | Used live `pad00000.meta`; found 352 PACs, kept 2, re-cut 350. |
+
+### Verdict
+
+```text
+SCOPE: PASS
+DIFF REVIEW: PASS
+BUILD/COMPILE: PASS (PowerShell parser and static checks)
+TESTS/VALIDATORS: PASS
+PACKAGE INSPECTION: N/A (not publishing yet)
+UNRESOLVED: full Meta Injector duration requires a matching clean live snapshot; in-game appearance remains unverified
+FINAL: PASS (local/unpublished)
+```

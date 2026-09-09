@@ -174,6 +174,27 @@ function Write-Ok([string]$msg)    { Write-Host ("  [OK] " + $msg) -ForegroundCo
 function Write-Warn([string]$msg)  { Write-Host ("  [!] " + $msg) -ForegroundColor Yellow }
 function Write-Err([string]$msg)   { Write-Host ("  [X] " + $msg) -ForegroundColor Red }
 
+function Write-MetaInjectReport {
+    param(
+        [System.Collections.IDictionary]$Report,
+        [string]$Path
+    )
+    if ([string]::IsNullOrWhiteSpace($Path)) { return }
+    try {
+        $dir = Split-Path -Parent $Path
+        if (-not (Test-Path -LiteralPath $dir -PathType Container)) {
+            New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        }
+        $tmp = $Path + '.tmp'
+        $json = $Report | ConvertTo-Json -Depth 8
+        $utf8 = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($tmp, $json, $utf8)
+        Move-Item -LiteralPath $tmp -Destination $Path -Force
+    } catch {
+        Write-Warn ('Could not write Meta Injector report: ' + $_.Exception.Message)
+    }
+}
+
 function Pause-Any {
     Write-Host ''
     Write-Host '  Press any key to continue...' -ForegroundColor DarkGray
@@ -2101,17 +2122,24 @@ function Dismount-BdoTemporaryDrive {
 function Prepare-BdoInjectStage {
     param(
         [string]$PazDrive,
-        [string]$SourceDrive
+        [string]$SourceDrive,
+        [string]$ReportPath = ''
     )
     if (-not (Test-Path -LiteralPath $Script:InjectStageTool)) {
         throw "Missing canonical stage builder: $Script:InjectStageTool"
     }
     $stage = $PazDrive + '\BDO_AIO_INJECT'
     Write-Info 'Building canonical injection tree (all collections kept; organizer folders flattened)...'
-    & $Script:PythonExe $Script:InjectStageTool `
-        --paz ($PazDrive + '\') `
-        --source ($SourceDrive + '\') `
-        --stage $stage | ForEach-Object { Write-Host $_ }
+    $builderArgs = @(
+        $Script:InjectStageTool,
+        '--paz', ($PazDrive + '\'),
+        '--source', ($SourceDrive + '\'),
+        '--stage', $stage
+    )
+    if (-not [string]::IsNullOrWhiteSpace($ReportPath)) {
+        $builderArgs += @('--report', $ReportPath)
+    }
+    & $Script:PythonExe @builderArgs | ForEach-Object { Write-Host $_ }
     if ($LASTEXITCODE -ne 0) {
         throw "Canonical injection stage failed with exit code $LASTEXITCODE. No injection was started."
     }
@@ -2156,12 +2184,62 @@ function Run-MetaInjector {
         Pause-Any
         return
     }
+
+    $runId = [guid]::NewGuid().ToString('N')
+    $runStarted = [DateTime]::UtcNow
+    $reportDir = Join-Path $Script:Root 'logs'
+    $reportPath = Join-Path $reportDir ('meta-inject-' + $runId + '.json')
+    $stageReportPath = Join-Path $reportDir ('meta-inject-' + $runId + '-stage.json')
+    $report = [ordered]@{
+        schema = 1
+        launcherVersion = [string]$Script:Version
+        runId = $runId
+        action = 'meta-inject'
+        state = 'started'
+        startedAt = $runStarted.ToString('o')
+        finishedAt = $null
+        reportPath = $reportPath
+        targetPaz = $paz
+        source = $source
+        stagePath = $null
+        stageReportPath = $stageReportPath
+        clientVersionBefore = $null
+        clientVersionAfter = $null
+        backupStartedAt = $null
+        backupFinishedAt = $null
+        stageStartedAt = $null
+        stageFinishedAt = $null
+        injectorStartedAt = $null
+        injectorFinishedAt = $null
+        verifyStartedAt = $null
+        verifyFinishedAt = $null
+        backupMs = $null
+        stageBuildMs = $null
+        injectorMs = $null
+        verifyMs = $null
+        injectorExitCode = $null
+        verifyPassed = $null
+        error = $null
+    }
+    Write-Info ('Run ID: ' + $runId)
+    Write-Info ('Run report: ' + $reportPath)
+    Write-MetaInjectReport -Report $report -Path $reportPath
+
     # Snapshot a pristine meta before the very first inject. Once injected, the
     # only pre-inject copy left is Meta Injector's own backup, and losing it means
     # a full Steam/launcher repair.
     Write-Host ''
     Write-Info 'Checking for a vanilla meta backup...'
+    $backupStarted = [DateTime]::UtcNow
+    $report['backupStartedAt'] = $backupStarted.ToString('o')
     if (-not (Invoke-VanillaRestoreTool @('backup'))) {
+        $backupFinished = [DateTime]::UtcNow
+        $report['state'] = 'backup-failed'
+        $report['backupFinishedAt'] = $backupFinished.ToString('o')
+        $report['backupMs'] = [int][math]::Round(($backupFinished - $backupStarted).TotalMilliseconds)
+        $report['error'] = 'A current-version vanilla meta snapshot is required before injection.'
+        $report['finishedAt'] = [DateTime]::UtcNow.ToString('o')
+        Write-MetaInjectReport -Report $report -Path $reportPath
         Write-Err 'A current-version vanilla meta snapshot is required before injection.'
         Write-Warn 'Injection was aborted; refresh the snapshot after the launcher finishes patching.'
         Pause-Any
@@ -2173,6 +2251,11 @@ function Run-MetaInjector {
     # decides the client rolled back and re-downloads the meta, wiping every mod.
     # Measured 2026-08-27: 3418 -> 3412 triggered a 1 GB re-patch.
     $metaVersionBefore = Get-BdoMetaVersion -PazFolder $paz
+    $backupFinished = [DateTime]::UtcNow
+    $report['clientVersionBefore'] = $metaVersionBefore
+    $report['backupFinishedAt'] = $backupFinished.ToString('o')
+    $report['backupMs'] = [int][math]::Round(($backupFinished - $backupStarted).TotalMilliseconds)
+    Write-MetaInjectReport -Report $report -Path $reportPath
     if ($metaVersionBefore) { Write-Info ("Client version before inject: " + $metaVersionBefore) }
 
     Write-Host ''
@@ -2181,14 +2264,32 @@ function Run-MetaInjector {
     Write-Host ''
     $pazDrive = $null
     $sourceDrive = $null
+    $stage = $null
     try {
         $pazDrive = Mount-BdoTemporaryDrive -Target $paz
         $sourceDrive = Mount-BdoTemporaryDrive -Target $source
-        $stage = [string](Prepare-BdoInjectStage -PazDrive $pazDrive -SourceDrive $sourceDrive)
+        $stageStarted = [DateTime]::UtcNow
+        $report['stageStartedAt'] = $stageStarted.ToString('o')
+        $stage = [string](Prepare-BdoInjectStage -PazDrive $pazDrive -SourceDrive $sourceDrive -ReportPath $stageReportPath)
+        $stageFinished = [DateTime]::UtcNow
+        $report['stagePath'] = $stage
+        $report['stageFinishedAt'] = $stageFinished.ToString('o')
+        $report['stageBuildMs'] = [int][math]::Round(($stageFinished - $stageStarted).TotalMilliseconds)
+        $report['state'] = 'stage-ready'
+        Write-MetaInjectReport -Report $report -Path $reportPath
         $shortExe = $pazDrive + '\Meta Injector.exe'
         Write-Info ("Launching through short path: " + $shortExe)
+        $injectStarted = [DateTime]::UtcNow
+        $report['injectorStartedAt'] = $injectStarted.ToString('o')
         $process = Start-Process -FilePath $shortExe -WorkingDirectory ($pazDrive + '\') `
             -ArgumentList ('-files "{0}"' -f $stage) -PassThru -Wait
+        $injectFinished = [DateTime]::UtcNow
+        $report['injectorFinishedAt'] = $injectFinished.ToString('o')
+        $report['injectorMs'] = [int][math]::Round(($injectFinished - $injectStarted).TotalMilliseconds)
+        $report['injectorExitCode'] = [int]$process.ExitCode
+        $report['clientVersionAfter'] = Get-BdoMetaVersion -PazFolder $paz
+        $report['state'] = 'injector-finished'
+        Write-MetaInjectReport -Report $report -Path $reportPath
         Write-Ok ("Meta Injector closed (process exit code " + $process.ExitCode + ").")
         # A meta that points past the end of an archive is exactly what the client
         # reports as corrupted data. Prove it resolves before the game is launched.
@@ -2199,7 +2300,16 @@ function Run-MetaInjector {
         Write-Info 'Verifying the injected meta before you launch...'
         $verifyArgs = @('verify')
         if ($metaVersionBefore) { $verifyArgs += @('--expect-version', [string]$metaVersionBefore) }
-        if (-not (Invoke-VanillaRestoreTool $verifyArgs)) {
+        $verifyStarted = [DateTime]::UtcNow
+        $report['verifyStartedAt'] = $verifyStarted.ToString('o')
+        $verifyPassed = Invoke-VanillaRestoreTool $verifyArgs
+        $verifyFinished = [DateTime]::UtcNow
+        $report['verifyFinishedAt'] = $verifyFinished.ToString('o')
+        $report['verifyMs'] = [int][math]::Round(($verifyFinished - $verifyStarted).TotalMilliseconds)
+        $report['verifyPassed'] = [bool]$verifyPassed
+        $report['state'] = if ($verifyPassed) { 'verified' } else { 'verify-failed' }
+        Write-MetaInjectReport -Report $report -Path $reportPath
+        if (-not $verifyPassed) {
             Write-Host ''
             Write-Err 'THE INJECTED META DID NOT VERIFY. DO NOT LAUNCH THE GAME.'
             Write-Warn 'Launching now would make the launcher re-patch and wipe the injection.'
@@ -2226,12 +2336,18 @@ function Run-MetaInjector {
             Write-Warn 'Could not detect the client region from service.ini; Meta Patcher was not run automatically.'
             Write-Host '  Check the author FAQ before using it: https://www.undertow.club/downloads/meta-patcher.7829/field?field=FAQ' -ForegroundColor Cyan
         }
+        if ($verifyPassed) { $report['state'] = 'completed' }
     } catch {
+        $report['state'] = 'error'
+        $report['error'] = $_.Exception.Message
+        Write-MetaInjectReport -Report $report -Path $reportPath
         Write-Err $_.Exception.Message
         Write-Warn 'No files were deleted. Fix the reported input and run Meta Injector again.'
     } finally {
         Dismount-BdoTemporaryDrive -Drive $sourceDrive
         Dismount-BdoTemporaryDrive -Drive $pazDrive
+        $report['finishedAt'] = [DateTime]::UtcNow.ToString('o')
+        Write-MetaInjectReport -Report $report -Path $reportPath
     }
     Pause-Any
 }

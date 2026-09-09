@@ -19,7 +19,18 @@ $functionAst = $ast.Find({
         $node.Name -eq 'Prepare-BdoInjectStage'
 }, $true)
 if (-not $functionAst) { throw 'Prepare-BdoInjectStage was not found.' }
+if ($functionAst.Extent.Text -notmatch '\$ReportPath' -or $functionAst.Extent.Text -notmatch "'--report'") {
+    throw 'Prepare-BdoInjectStage does not forward the structured stage report path.'
+}
 Invoke-Expression $functionAst.Extent.Text
+
+$reportFunctionAst = $ast.Find({
+    param($node)
+    $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+        $node.Name -eq 'Write-MetaInjectReport'
+}, $true)
+if (-not $reportFunctionAst) { throw 'Write-MetaInjectReport was not found.' }
+Invoke-Expression $reportFunctionAst.Extent.Text
 
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('bdo-aio-meta-launch-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tempRoot | Out-Null
@@ -33,6 +44,16 @@ try {
     $Script:PythonExe = (Get-Process -Id $PID).Path
     $Script:InjectStageTool = $dummyBuilder
     function Write-Info([string]$Message) { Write-Host $Message }
+
+    $reportPath = Join-Path $tempRoot 'reports\sample.json'
+    $sample = [ordered]@{ runId = 'test-run'; state = 'verified'; injectorMs = 123 }
+    Write-MetaInjectReport -Report $sample -Path $reportPath
+    if (-not (Test-Path -LiteralPath $reportPath -PathType Leaf)) { throw 'Structured report was not written.' }
+    $roundTrip = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+    if ($roundTrip.runId -ne 'test-run' -or $roundTrip.state -ne 'verified' -or $roundTrip.injectorMs -ne 123) {
+        throw 'Structured report did not round-trip its fields.'
+    }
+    Write-Host 'PASS: Meta Injector report writer creates a readable structured report.'
 
     $stage = Prepare-BdoInjectStage -PazDrive 'X:' -SourceDrive 'Y:'
     if ($stage -isnot [string]) { throw "Stage must be one string; got $($stage.GetType().FullName)." }

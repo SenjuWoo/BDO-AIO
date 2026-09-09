@@ -6,6 +6,8 @@
   `backup --force` is required after a patch and a clean live meta.
 - Per-outfit PartCut research now defaults to the live meta; old snapshots require
   explicit `--meta` selection.
+- Meta Injector runs now write a per-run JSON report with stage, injector, and verify
+  timings plus child-process exit/status evidence under the app's `logs` folder.
 
 ## 2.4.2 - Catch a rolled-back client version before it wipes your mods
 
