@@ -77,13 +77,19 @@ def main() -> int:
     ap.add_argument("--group", required=True, help="e.g. PEW_Upperbody")
     ap.add_argument("--folder", required=True, help="e.g. 1_Pc/3_PEW/Armor/9_Upperbody")
     ap.add_argument("--keep", default="", help="comma separated globs to leave UNCUT")
-    ap.add_argument("--meta", default="pad00000.BDOAIO-VANILLA.meta")
+    ap.add_argument(
+        "--meta",
+        default=None,
+        help="meta filename to analyze (default: live pad00000.meta; pass a snapshot explicitly for research)",
+    )
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
     xml_path = pathlib.Path(args.xml)
     paz = pathlib.Path(args.paz)
-    meta_name = args.meta if (paz / args.meta).is_file() else "pad00000.meta"
+    meta_name = args.meta or "pad00000.meta"
+    if not (paz / meta_name).is_file():
+        raise SystemExit(f"[FATAL] meta file not found: {paz / meta_name}")
 
     keep = [k.strip().lower() for k in args.keep.split(",") if k.strip()]
     pacs = folder_pacs(paz, meta_name, args.folder)

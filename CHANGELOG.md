@@ -1,3 +1,12 @@
+## Unreleased
+
+- Status and restore scans now report `STALE BACKUP / UNKNOWN` instead of inferring
+  injection from a snapshot taken under a different client version.
+- Normal Meta Injector runs abort when the existing AIO vanilla snapshot is stale;
+  `backup --force` is required after a patch and a clean live meta.
+- Per-outfit PartCut research now defaults to the live meta; old snapshots require
+  explicit `--meta` selection.
+
 ## 2.4.2 - Catch a rolled-back client version before it wipes your mods
 
 Symptom: mods reverted on their own and the game reported corrupted files. Cause: the

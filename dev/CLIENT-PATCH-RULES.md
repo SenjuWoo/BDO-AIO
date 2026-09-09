@@ -22,7 +22,8 @@ of `PAD6xxxx.PAZ` archives. The user's only symptom was the game reporting corru
 files. Nothing was corrupt.
 
 **The user did not restore anything, and the AIO does not restore before injecting**
-(`Run-MetaInjector` calls `backup`, which no-ops when a snapshot exists). The only
+(`Run-MetaInjector` calls `backup`, which only no-ops when the snapshot matches the
+live client version and now aborts on a stale snapshot). The only
 write to `pad00000.meta` in that window was Meta Injector's own. So Meta Injector wrote
 a **stale client version into the meta header**.
 

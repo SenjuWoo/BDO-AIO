@@ -66,6 +66,10 @@ not clip.
 python partcut_recut.py --xml "<PAZ>/files_to_patch/_PartCutGen/character/partcutdesc.xml" --paz "<PAZ>" --group PEW_Upperbody --folder "1_Pc/3_PEW/Armor/9_Upperbody" --keep "pew_03_ub_0002*"
 ```
 
+The tool analyzes the live `pad00000.meta` by default. Pass `--meta
+pad00000.BDOAIO-VANILLA.meta` only when deliberately doing research against that
+snapshot; it is not selected implicitly when a stale snapshot exists.
+
 Run **after** PartCutGen `[4]`, **before** Meta Injector `[5]`. PartCutGen rewrites
 `partcutdesc.xml`, so re-running `[4]` alone silently reverts to vanilla. Confirmed working
 in game: one outfit uncut, nothing else clipped.

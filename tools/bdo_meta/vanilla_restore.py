@@ -106,9 +106,9 @@ def cmd_scan(paz: pathlib.Path, ice: IceDecipher) -> int:
         log(f"[FATAL] {current} not found")
         return 2
 
-    cur_refs = referenced_paz(current, ice)
-    log(f"current meta      : {current.stat().st_size} bytes, {len(cur_refs)} PAZ referenced, max {max(cur_refs)}")
-    log(f"client/meta version: {meta_version(current)}")
+    current_version = meta_version(current)
+    log(f"current meta      : {current.stat().st_size} bytes")
+    log(f"client/meta version: {current_version}")
 
     backups = find_backups(paz)
     if not backups:
@@ -120,10 +120,22 @@ def cmd_scan(paz: pathlib.Path, ice: IceDecipher) -> int:
 
     log(f"backups           : {len(backups)} (oldest first)")
     pristine = backups[0]
+    pristine_version = meta_version(pristine)
     for path in backups:
-        refs = referenced_paz(path, ice)
+        version = meta_version(path)
         mark = "  <== will be used (oldest)" if path == pristine else ""
-        log(f"  {path.name}  {len(refs)} PAZ, max {max(refs)}{mark}")
+        log(f"  {path.name}  client/meta version {version}{mark}")
+
+    if pristine_version != current_version:
+        log("")
+        log("state             : STALE BACKUP / UNKNOWN")
+        log(f"                    live client is {current_version}; oldest backup is {pristine_version}")
+        log("                    Do not infer injected or clean state from this version mismatch.")
+        log("                    Let the launcher finish patching, then run 'backup --force'.")
+        return 1
+
+    cur_refs = referenced_paz(current, ice)
+    log(f"current references : {len(cur_refs)} PAZ, max {max(cur_refs)}")
 
     keep = referenced_paz(pristine, ice)
     injected = sorted(cur_refs - keep)
@@ -180,18 +192,37 @@ def meta_is_injected(paz: pathlib.Path, refs: set[int]) -> bool:
 
 def cmd_backup(paz: pathlib.Path, ice: IceDecipher, force: bool) -> int:
     target = paz / AIO_BACKUP_NAME
+    current = paz / "pad00000.meta"
+    if not current.is_file():
+        log(f"[FATAL] {current} not found")
+        return 2
+
     if target.is_file() and not force:
-        log(f"[OK] AIO vanilla backup already exists: {target.name}")
+        try:
+            current_version = meta_version(current)
+            snapshot_version = meta_version(target)
+        except (OSError, struct.error) as exc:
+            log(f"[FATAL] Could not read the live/snapshot meta version: {exc}")
+            return 2
+        if snapshot_version != current_version:
+            log(f"[FATAL] Existing AIO snapshot is stale: snapshot {snapshot_version}, live {current_version}.")
+            log("        It will not be silently accepted or overwritten by a normal inject run.")
+            log("        Let the launcher finish patching, then run 'backup --force' after the live meta is clean.")
+            return 5
+        log(f"[OK] AIO vanilla backup already exists for client {current_version}: {target.name}")
         return 0
 
     backups = find_backups(paz)
     candidates = [p for p in backups if p.name != AIO_BACKUP_NAME]
-    current = paz / "pad00000.meta"
     cur_refs = referenced_paz(current, ice)
 
     if candidates:
         source = candidates[0]
         why = "oldest Meta Injector backup"
+        if meta_version(source) != meta_version(current):
+            log(f"[WARN] Ignoring stale Meta Injector backup {source.name} (client {meta_version(source)}).")
+            source = current
+            why = "current meta (older backups are stale)"
     else:
         source = current
         why = "current meta"

@@ -4,7 +4,8 @@ Scan a BDO PAZ folder for stock vs Meta-Injector-modded state + AIO staged packs
 
 Signals (Meta Injector / BDO Toolkit):
   - Backups named pad00000[{ver}][{stamp}].meta.backup next to pad00000.meta
-  - Current meta vs latest backup (byte hash) → MODDED if different after inject
+  - Current meta vs a same-version pristine reference (byte hash) → MODDED if different
+  - AIO vanilla snapshot version vs live meta → STALE_BACKUP when they differ
   - files_to_patch inventory (AIO folders + total files)
   - Optional experimental DLL markers in game root (parent of PAZ)
 
@@ -17,8 +18,11 @@ import hashlib
 import json
 import pathlib
 import re
+import struct
 import sys
 from datetime import datetime, timezone
+
+from vanilla_restore import AIO_BACKUP_NAME, meta_version
 
 # AIO-known staged package prefixes under files_to_patch
 AIO_PREFIXES = (
@@ -93,6 +97,34 @@ def find_backups(paz: pathlib.Path) -> list[dict]:
     return out
 
 
+def _reference_backup(meta_path: pathlib.Path, backups: list[dict]) -> tuple[dict | None, str | None]:
+    """Use the same pristine reference as vanilla_restore: AIO snapshot first."""
+    aio = meta_path.parent / AIO_BACKUP_NAME
+    if aio.is_file():
+        st = aio.stat()
+        return (
+            {
+                "path": str(aio),
+                "name": aio.name,
+                "ver": "?",
+                "tag": "AIO",
+                "size": st.st_size,
+                "mtime": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),
+            },
+            "AIO vanilla snapshot",
+        )
+    if backups:
+        return min(backups, key=lambda item: item["mtime"]), "oldest Meta Injector backup"
+    return None, None
+
+
+def _safe_meta_version(path: pathlib.Path) -> int | None:
+    try:
+        return meta_version(path)
+    except (OSError, struct.error):
+        return None
+
+
 def inventory_files_to_patch(ftp: pathlib.Path) -> dict:
     if not ftp.is_dir():
         return {"exists": False, "total_files": 0, "aio_packages": [], "other_top": []}
@@ -148,10 +180,10 @@ def classify_meta(
     backups: list[dict],
 ) -> dict:
     """
-    STOCK     — no inject backups; treat as stock (or never injected with this injector)
-    MODDED    — backup exists and current meta hash != latest backup hash
-    RESTORED  — backup exists and current meta matches latest backup (after Restore Backup)
-    UNKNOWN   — meta missing / unreadable
+    MODDED       — current meta differs from a same-version pristine reference
+    RESTORED     — current meta matches a same-version pristine reference
+    STALE_BACKUP — reference exists, but its client version differs from the live meta
+    UNKNOWN      — no reference exists, or a meta version/hash cannot be read
     """
     if not meta_path.is_file():
         return {
@@ -167,20 +199,55 @@ def classify_meta(
     meta_hash = sha256_file(meta_path)
     meta_size = st.st_size
     meta_mtime = datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat()
+    current_version = _safe_meta_version(meta_path)
+    reference, reference_kind = _reference_backup(meta_path, backups)
 
-    if not backups:
+    if not reference:
         return {
-            "state": "STOCK",
-            "detail": "No Meta Injector *.meta.backup found — meta looks unpatched by injector (or backups deleted)",
+            "state": "UNKNOWN",
+            "detail": "No AIO vanilla snapshot or Meta Injector backup exists; meta state cannot be classified safely",
             "meta_sha256": meta_hash,
             "meta_size": meta_size,
             "meta_mtime": meta_mtime,
+            "meta_version": current_version,
             "latest_backup": None,
             "matches_latest_backup": None,
         }
 
-    latest = backups[0]
-    bpath = pathlib.Path(latest["path"])
+    bpath = pathlib.Path(reference["path"])
+    reference_version = _safe_meta_version(bpath)
+    if current_version is None or reference_version is None:
+        return {
+            "state": "UNKNOWN",
+            "detail": f"Could not read the live/reference meta version ({reference['name']})",
+            "meta_sha256": meta_hash,
+            "meta_size": meta_size,
+            "meta_mtime": meta_mtime,
+            "meta_version": current_version,
+            "reference_meta_version": reference_version,
+            "reference_kind": reference_kind,
+            "latest_backup": reference,
+            "matches_latest_backup": None,
+        }
+
+    if current_version != reference_version:
+        return {
+            "state": "STALE_BACKUP",
+            "detail": (
+                f"Live meta is client {current_version}, but {reference_kind.lower()} "
+                f"{reference['name']} is client {reference_version}; injected/clean state is unknown"
+            ),
+            "meta_sha256": meta_hash,
+            "meta_size": meta_size,
+            "meta_mtime": meta_mtime,
+            "meta_version": current_version,
+            "reference_meta_version": reference_version,
+            "reference_kind": reference_kind,
+            "latest_backup": reference,
+            "matches_latest_backup": None,
+            "version_matches": False,
+        }
+
     try:
         bhash = sha256_file(bpath)
     except OSError as e:
@@ -190,7 +257,10 @@ def classify_meta(
             "meta_sha256": meta_hash,
             "meta_size": meta_size,
             "meta_mtime": meta_mtime,
-            "latest_backup": latest,
+            "meta_version": current_version,
+            "reference_meta_version": reference_version,
+            "reference_kind": reference_kind,
+            "latest_backup": reference,
             "matches_latest_backup": None,
         }
 
@@ -198,14 +268,14 @@ def classify_meta(
     if match:
         state = "RESTORED"
         detail = (
-            "Current pad00000.meta matches latest injector backup "
-            f"({latest['name']}) — looks restored / not currently injected"
+            "Current pad00000.meta matches the same-version "
+            f"{reference_kind.lower()} ({reference['name']}) — clean reference state"
         )
     else:
         state = "MODDED"
         detail = (
-            "Current pad00000.meta DIFFERS from latest injector backup "
-            f"({latest['name']}) — Meta Injector patches are applied"
+            "Current pad00000.meta differs from the same-version "
+            f"{reference_kind.lower()} ({reference['name']}) — meta was modified"
         )
 
     return {
@@ -214,10 +284,14 @@ def classify_meta(
         "meta_sha256": meta_hash,
         "meta_size": meta_size,
         "meta_mtime": meta_mtime,
-        "latest_backup": latest,
+        "meta_version": current_version,
+        "reference_meta_version": reference_version,
+        "reference_kind": reference_kind,
+        "latest_backup": reference,
         "latest_backup_sha256": bhash,
         "matches_latest_backup": match,
         "backup_count": len(backups),
+        "version_matches": True,
     }
 
 
@@ -246,21 +320,23 @@ def main() -> int:
     staged = ftp_info.get("total_files", 0) > 0
     meta_state = meta_info["state"]
 
-    if meta_state == "MODDED" and staged:
+    if meta_state == "STALE_BACKUP":
+        overall = "STALE BACKUP / UNKNOWN"
+        overall_detail = meta_info["detail"]
+        if staged:
+            overall_detail += " files_to_patch is staged, but staging does not prove what the game meta uses."
+    elif meta_state == "MODDED" and staged:
         overall = "INJECTED + STAGED"
         overall_detail = "Meta is modded (injector applied) and files_to_patch still has content."
     elif meta_state == "MODDED" and not staged:
         overall = "INJECTED (no stage folder content)"
         overall_detail = "Meta is modded but files_to_patch is empty/missing — inject was applied earlier."
-    elif meta_state in ("STOCK", "RESTORED") and staged:
+    elif meta_state == "RESTORED" and staged:
         overall = "STAGED only (not injected yet)"
         overall_detail = "files_to_patch has mods ready — run Meta Injector to apply into pad00000.meta."
     elif meta_state == "RESTORED" and not staged:
         overall = "RESTORED / clean meta"
         overall_detail = "Meta matches injector backup; no staged packs."
-    elif meta_state == "STOCK" and not staged:
-        overall = "STOCK (clean)"
-        overall_detail = "No injector backups and no files_to_patch content."
     else:
         overall = meta_state
         overall_detail = meta_info.get("detail", "")
@@ -321,9 +397,10 @@ def main() -> int:
             log("  not installed (no AIO experimental marker)")
         log("")
         log("Legend:")
-        log("  STOCK    = no Meta Injector backup; treat as stock meta")
-        log("  MODDED   = meta differs from latest *.meta.backup (patches applied)")
-        log("  RESTORED = meta matches latest backup (injector Restore Backup)")
+        log("  MODDED   = meta differs from a same-version pristine reference")
+        log("  RESTORED = meta matches a same-version pristine reference")
+        log("  STALE    = reference version differs; injected/clean state is unknown")
+        log("  UNKNOWN  = no trustworthy pristine reference exists")
         log("  STAGED   = files under files_to_patch ready for inject")
 
     write_path = args.write_status

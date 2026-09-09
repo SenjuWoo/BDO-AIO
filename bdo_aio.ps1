@@ -2161,7 +2161,12 @@ function Run-MetaInjector {
     # a full Steam/launcher repair.
     Write-Host ''
     Write-Info 'Checking for a vanilla meta backup...'
-    [void](Invoke-VanillaRestoreTool @('backup'))
+    if (-not (Invoke-VanillaRestoreTool @('backup'))) {
+        Write-Err 'A current-version vanilla meta snapshot is required before injection.'
+        Write-Warn 'Injection was aborted; refresh the snapshot after the launcher finishes patching.'
+        Pause-Any
+        return
+    }
 
     # The meta header carries the client version the launcher checks. Record it
     # BEFORE injecting: if the injector writes an older number back, the launcher

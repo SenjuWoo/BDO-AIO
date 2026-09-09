@@ -6,7 +6,7 @@ import struct
 import shutil
 import unittest
 
-from vanilla_restore import meta_version, contiguous_game_max, meta_is_injected
+from vanilla_restore import cmd_backup, cmd_scan, meta_version, contiguous_game_max, meta_is_injected
 
 from vanilla_restore import AIO_BACKUP_NAME, find_backups, human, orphan_paz
 
@@ -99,6 +99,32 @@ class MetaVersionTests(unittest.TestCase):
         b.write_bytes(struct.pack("<I", 3418) + bytes(16))
         # restore must refuse exactly this pairing
         self.assertNotEqual(meta_version(a), meta_version(b))
+
+
+class FreshnessGuardTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.dir = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.dir, True)
+
+    def write_meta(self, name: str, version: int) -> pathlib.Path:
+        path = self.dir / name
+        path.write_bytes(struct.pack("<I", version) + bytes(64))
+        return path
+
+    def test_backup_rejects_stale_existing_snapshot(self) -> None:
+        self.write_meta("pad00000.meta", 3435)
+        self.write_meta(AIO_BACKUP_NAME, 3418)
+        self.assertEqual(cmd_backup(self.dir, None, False), 5)
+
+    def test_backup_accepts_existing_snapshot_for_same_client(self) -> None:
+        self.write_meta("pad00000.meta", 3435)
+        self.write_meta(AIO_BACKUP_NAME, 3435)
+        self.assertEqual(cmd_backup(self.dir, None, False), 0)
+
+    def test_scan_refuses_to_infer_state_from_stale_snapshot(self) -> None:
+        self.write_meta("pad00000.meta", 3435)
+        self.write_meta(AIO_BACKUP_NAME, 3418)
+        self.assertEqual(cmd_scan(self.dir, None), 1)
 
 
 class InjectedDetectionTests(unittest.TestCase):
