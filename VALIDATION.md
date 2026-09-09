@@ -100,3 +100,19 @@ per phase before and after the change; every sample exited 0.
 The external Meta Injector was not run because the live client is version 3435
 while the AIO vanilla snapshot is version 3418. No live PAZ, staged source, or user
 configuration was modified by this benchmark.
+
+## Live post-inject validation — 2026-09-09
+
+The user completed a fresh Meta Injector run against client version 3435. The
+external tool took approximately 122 seconds by user observation; the run used
+the older unpacked app, so no structured launcher timing report was produced.
+
+| Command | Exit | Result |
+|---|---:|---|
+| `paz_status_scan.py --json` | 0 | `INJECTED + STAGED`; same-version meta state `MODDED`; live version 3435; 19 injected PAZ references. |
+| `vanilla_restore.py verify --expect-version 3435` | 0 | 862,978 blocks readable; 0 missing archives; 0 past-end blocks. |
+| `vanilla_restore.py scan` | 0 | 19 injected PAZ archives identified; restore was not applied. |
+
+The current source launcher has the new five-second heartbeat and elapsed-time
+display for the next run. Codex performed only read-only checks after the user's
+inject; no live PAZ, staged source, or configuration file was changed here.

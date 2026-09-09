@@ -2282,7 +2282,12 @@ function Run-MetaInjector {
         $injectStarted = [DateTime]::UtcNow
         $report['injectorStartedAt'] = $injectStarted.ToString('o')
         $process = Start-Process -FilePath $shortExe -WorkingDirectory ($pazDrive + '\') `
-            -ArgumentList ('-files "{0}"' -f $stage) -PassThru -Wait
+            -ArgumentList ('-files "{0}"' -f $stage) -PassThru
+        $injectHeartbeat = [Diagnostics.Stopwatch]::StartNew()
+        while (-not $process.WaitForExit(5000)) {
+            Write-Info ("Meta Injector still saving PAZ archives... {0}s elapsed" -f [int]$injectHeartbeat.Elapsed.TotalSeconds)
+        }
+        $injectHeartbeat.Stop()
         $injectFinished = [DateTime]::UtcNow
         $report['injectorFinishedAt'] = $injectFinished.ToString('o')
         $report['injectorMs'] = [int][math]::Round(($injectFinished - $injectStarted).TotalMilliseconds)
@@ -2290,7 +2295,7 @@ function Run-MetaInjector {
         $report['clientVersionAfter'] = Get-BdoMetaVersion -PazFolder $paz
         $report['state'] = 'injector-finished'
         Write-MetaInjectReport -Report $report -Path $reportPath
-        Write-Ok ("Meta Injector closed (process exit code " + $process.ExitCode + ").")
+        Write-Ok ("Meta Injector closed (process exit code " + $process.ExitCode + "; elapsed " + ([math]::Round($report['injectorMs'] / 1000, 1)) + "s).")
         # A meta that points past the end of an archive is exactly what the client
         # reports as corrupted data. Prove it resolves before the game is launched.
         if ($metaVersionBefore) {

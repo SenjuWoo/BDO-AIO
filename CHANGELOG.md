@@ -10,6 +10,8 @@
   timings plus child-process exit/status evidence under the app's `logs` folder.
 - Shared PAZ meta parsing now reads each fixed-width block in one operation; local
   verification, stage planning, and PartCut planning are about 15–18% faster.
+- The Meta Injector wait now shows a five-second progress heartbeat and reports its
+  elapsed archive-save time when the external tool closes.
 
 ## 2.4.2 - Catch a rolled-back client version before it wipes your mods
 

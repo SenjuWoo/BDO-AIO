@@ -24,6 +24,17 @@ if ($functionAst.Extent.Text -notmatch '\$ReportPath' -or $functionAst.Extent.Te
 }
 Invoke-Expression $functionAst.Extent.Text
 
+$injectorAst = $ast.Find({
+    param($node)
+    $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+        $node.Name -eq 'Run-MetaInjector'
+}, $true)
+if (-not $injectorAst) { throw 'Run-MetaInjector was not found.' }
+if ($injectorAst.Extent.Text -notmatch '\.WaitForExit\(5000\)' -or
+    $injectorAst.Extent.Text -notmatch 'still saving PAZ archives') {
+    throw 'Run-MetaInjector does not expose a five-second progress heartbeat.'
+}
+
 $reportFunctionAst = $ast.Find({
     param($node)
     $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
