@@ -81,3 +81,22 @@ PACKAGE INSPECTION: N/A (not publishing yet)
 UNRESOLVED: full Meta Injector duration requires a matching clean live snapshot; in-game appearance remains unverified
 FINAL: PASS (local/unpublished)
 ```
+
+## Local performance baseline — meta parser optimization
+
+Date: 2026-09-09
+
+The shared `FileBlock` reader now unpacks each fixed-width 28-byte record in one
+operation instead of seven small reads. The same live PAZ was measured three times
+per phase before and after the change; every sample exited 0.
+
+| Read-only phase | Before median | After median | Change |
+|---|---:|---:|---:|
+| `vanilla_restore.py verify` | 2,692 ms | 2,279 ms | -15.3% |
+| `inject_stage_builder.py --dry-run` | 3,559 ms | 2,972 ms | -16.5% |
+| `partcut_recut.py --dry-run` | 2,462 ms | 2,010 ms | -18.4% |
+| `paz_status_scan.py --json` | 521 ms | 547 ms | within run-to-run noise; stale state skips meta parsing |
+
+The external Meta Injector was not run because the live client is version 3435
+while the AIO vanilla snapshot is version 3418. No live PAZ, staged source, or user
+configuration was modified by this benchmark.

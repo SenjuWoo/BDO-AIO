@@ -1,8 +1,28 @@
 from __future__ import annotations
 
+import io
+import struct
 import unittest
 
 import body_size_patcher as bsp
+
+
+class MetaBlockTests(unittest.TestCase):
+    def test_file_block_reads_one_fixed_width_little_endian_record(self) -> None:
+        values = (11, 22, 33, 44, 55, 66, 77)
+        block = bsp.FileBlock(io.BytesIO(struct.pack("<7I", *values)))
+        self.assertEqual(
+            (
+                block.hash,
+                block.folderNum,
+                block.fileNum,
+                block.pazNum,
+                block.fileOffset,
+                block.zsize,
+                block.size,
+            ),
+            values,
+        )
 
 
 class AxisContractTests(unittest.TestCase):

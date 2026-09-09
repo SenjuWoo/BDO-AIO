@@ -25,6 +25,7 @@ import os
 import pathlib
 import re
 import shutil
+import struct
 import sys
 
 # Removed in 2.1.0 -- accepted from old configs, reported, then ignored.
@@ -184,13 +185,15 @@ class FileBlock:
     )
 
     def __init__(self, f):
-        self.hash = int.from_bytes(f.read(4), "little")
-        self.folderNum = int.from_bytes(f.read(4), "little")
-        self.fileNum = int.from_bytes(f.read(4), "little")
-        self.pazNum = int.from_bytes(f.read(4), "little")
-        self.fileOffset = int.from_bytes(f.read(4), "little")
-        self.zsize = int.from_bytes(f.read(4), "little")
-        self.size = int.from_bytes(f.read(4), "little")
+        (
+            self.hash,
+            self.folderNum,
+            self.fileNum,
+            self.pazNum,
+            self.fileOffset,
+            self.zsize,
+            self.size,
+        ) = struct.unpack("<7I", f.read(28))
         self.folderName = ""
         self.fileName = ""
 

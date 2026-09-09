@@ -8,6 +8,8 @@
   explicit `--meta` selection.
 - Meta Injector runs now write a per-run JSON report with stage, injector, and verify
   timings plus child-process exit/status evidence under the app's `logs` folder.
+- Shared PAZ meta parsing now reads each fixed-width block in one operation; local
+  verification, stage planning, and PartCut planning are about 15–18% faster.
 
 ## 2.4.2 - Catch a rolled-back client version before it wipes your mods
 
