@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="BDO Modding AIO">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f0cd7e"/>
+      <stop offset="1" stop-color="#9c6a2c"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#0c0f12"/>
+  <rect x="14" y="13" width="36" height="38" rx="5" fill="none" stroke="url(#gold)" stroke-width="2.4"/>
+  <rect x="21" y="21" width="22" height="3.6" rx="1.2" fill="url(#gold)"/>
+  <rect x="21" y="28.7" width="22" height="3.6" rx="1.2" fill="url(#gold)"/>
+  <rect x="21" y="36.4" width="14" height="3.6" rx="1.2" fill="url(#gold)"/>
+  <path fill="url(#gold)" d="M32 54.5 24.5 46h15L32 54.5z"/>
+</svg>
