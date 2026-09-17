@@ -1,5 +1,16 @@
 # BDO-AIO state
 
+## Current review checkpoint — 2026-09-17
+
+See [REVIEW-RESUME.md](REVIEW-RESUME.md) for current review evidence and limits.
+The September 11 apply and archive preflight did complete later than the snapshot
+below: see the final sections of `../VALIDATION.md`. The stale-reference status
+below must not be treated as today's game state. This review does not modify game
+files. Local changes include a sidebar clipping fix and exception-safe stage
+replacement, with regression coverage. Publication remains deferred.
+
+## Earlier snapshot (historical)
+
 **Date:** 2026-09-11
 **Version:** `2.4.2` with unpublished dashboard/review changes.
 **Published baseline:** `v2.4.2`, separate from these local changes.

@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Injection stage replacement now retains the previous owned stage until the new
+  tree is promoted; a failed promotion restores the previous stage. Regression
+  coverage exercises the failure and a successful retry using disposable files.
+- Widened the dashboard sidebar so Graphics & performance is fully visible.
+
 - Native **Graphics & performance** page: preview and apply the bundled GameOption
   profiles with a fresh-file token, complete timestamped backup, atomic merge and
   unknown/current-setting preservation. NVIDIA `.nip` import remains explicit in the

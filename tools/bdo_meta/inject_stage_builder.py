@@ -221,8 +221,21 @@ def materialize(stage: pathlib.Path, winners: list[Candidate], report: dict) -> 
                 copies += 1
         report["materialized"] = {"hardlinks": hardlinks, "copies": copies}
         (building / REPORT_NAME).write_text(json.dumps(report, indent=2), encoding="utf-8")
-        safe_remove_owned_stage(stage)
-        building.rename(stage)
+        previous = None
+        if stage.exists():
+            if not (stage / MARKER_NAME).is_file():
+                raise RuntimeError(f"refusing to replace unowned directory: {stage}")
+            import uuid
+            previous = stage.with_name(stage.name + ".previous-" + uuid.uuid4().hex)
+            stage.rename(previous)
+        try:
+            building.rename(stage)
+        except Exception:
+            if previous is not None:
+                previous.rename(stage)
+            raise
+        if previous is not None:
+            safe_remove_owned_stage(previous)
     except Exception:
         safe_remove_owned_stage(building)
         raise

@@ -113,6 +113,37 @@ class InjectStageBuilderTests(unittest.TestCase):
                 b"DDS test",
             )
 
+    def test_failed_promotion_preserves_previous_stage_and_retry_works(self) -> None:
+        import tempfile
+        from unittest.mock import patch
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            stage = root / "stage"
+            stage.mkdir()
+            (stage / MARKER_NAME).write_text("owned")
+            (stage / "previous.dds").write_bytes(b"previous")
+            source = root / "new.dds"
+            source.write_bytes(b"replacement")
+            winner = Candidate(str(source), "new.dds", "new.dds", "new.dds", False, False, 100, 11)
+            rename = pathlib.Path.rename
+
+            def fail_promotion(path, target):
+                if path == stage.with_name("stage.building"):
+                    raise PermissionError("replacement rename denied")
+                return rename(path, target)
+
+            with patch.object(pathlib.Path, "rename", fail_promotion):
+                with self.assertRaisesRegex(PermissionError, "replacement rename denied"):
+                    materialize(stage, [winner], {})
+            self.assertTrue((stage / "previous.dds").is_file(), "Previous working stage was deleted")
+            self.assertEqual((stage / "previous.dds").read_bytes(), b"previous")
+            self.assertFalse(stage.with_name("stage.building").exists())
+            materialize(stage, [winner], {})
+            self.assertEqual((stage / "new.dds").read_bytes(), b"replacement")
+            self.assertFalse((stage / "previous.dds").exists())
+            self.assertEqual(list(root.glob("stage.previous-*")), [])
+
     def test_routes_intentional_new_file_through_add_marker(self) -> None:
         import tempfile
 
