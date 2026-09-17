@@ -1,9 +1,34 @@
 # BDO-AIO state
 
-**Date:** 2026-08-27
-**Version in tree / on `main`:** `2.4.2`
-**Latest GitHub *release*:** `v2.4.1` - 2.4.2 source is pushed, no release archive built yet.
-**PAZ:** `<STEAM>\steamapps\common\Black Desert Online\Paz`
+**Date:** 2026-09-11
+**Version:** `2.4.2` with unpublished dashboard/review changes.
+**Published baseline:** `v2.4.2`, separate from these local changes.
+**Current plan:** [IMPROVEMENT-PLAN.md](IMPROVEMENT-PLAN.md).
+
+## Current development state
+
+Native WPF dashboard and reviewed backend fixes are implemented. Source Python and
+ten Windows PowerShell suites pass locally. Independent follow-up UI review closed
+stale-scan, failure-state and validation-focus findings. Publishing/pushing is deferred.
+The post-runtime rerun revalidated all ten PowerShell suites. Four stale verifier
+processes had held the shared save mutex; after they were closed, `test_dashboard.ps1`
+passed without weakening the guard or touching user settings.
+
+Current live state after the user's authorized full apply on 2026-09-11: game client
+**3444**, same-version AIO vanilla reference **3444**, and **2,254** staged files.
+Meta Injector completed with exit code 0 and post-injection verification passed; the
+live meta is now `MODIFIED` relative to the retained vanilla reference. The user also
+confirmed the selected saved setup works in-game. The older 3435 backup remains retained
+but is not eligible for restore.
+
+Full-install synchronization and read-only launch checks are recorded in
+`VALIDATION.md`. Keyboard/DPI/accessibility exercise and broader class/outfit coverage
+remain separate from this successful selected-setup test. No preview release artifact
+has been published. A local clean full-pack preflight archive is retained at
+`Z:\Backup\Ai documentation\BDO-AIO-preflight-2.4.2-full-clean.7z`; Body UNCUT
+remains shelved research.
+
+## Historical observation below — not current game or release state
 
 ## Status: client-version rollback fixed; user's game is clean vanilla
 
@@ -27,7 +52,7 @@ restore a snapshot from a different client version, and adds `verify`. Full writ
   `_PartCutGen/character/partcutdesc.xml`.
 - **Mods are not currently applied.** The pipeline has not been re-run since the patch.
 
-## Next
+## Historical next steps (2026-08-27, superseded by the current plan)
 
 1. User re-runs deploy -> PartCutGen -> Meta Injector.
 2. Watch for `Client version before inject: 3418` and the post-inject check. If it

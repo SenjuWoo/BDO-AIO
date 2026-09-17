@@ -5,12 +5,20 @@ import shutil
 import struct
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from paz_status_scan import classify_meta, find_backups
 from vanilla_restore import AIO_BACKUP_NAME
 
 
 class MetaStatusTests(unittest.TestCase):
+    def test_unreadable_meta_is_unknown(self) -> None:
+        current = self.write_meta("pad00000.meta", 3435)
+        with patch("paz_status_scan.sha256_file", side_effect=PermissionError("busy")):
+            result = classify_meta(current, [])
+        self.assertEqual(result["state"], "UNKNOWN")
+        self.assertIn("Could not read live meta", result["detail"])
+
     def setUp(self) -> None:
         self.dir = pathlib.Path(tempfile.mkdtemp(prefix="bdoaio-status-test-"))
         self.addCleanup(shutil.rmtree, self.dir, True)

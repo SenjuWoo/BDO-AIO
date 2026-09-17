@@ -224,7 +224,10 @@ class MetaFile:
         start = f.tell()
 
         while True:
-            if int.from_bytes(f.read(4), "little") == 631490897:
+            marker = f.read(4)
+            if len(marker) != 4:
+                raise ValueError("Meta file table marker is missing or truncated")
+            if int.from_bytes(marker, "little") == 631490897:
                 break
         f.seek(-4, 1)
         middle = f.tell()
@@ -255,15 +258,23 @@ class MetaFile:
             self.fileBlocks = blocks + self.fileBlocks
 
         f.seek(block_end)
-        length = int.from_bytes(f.read(4), "little")
-        decrypted = ice.decrypt(f.read(length))
+        if not block_end:
+            raise ValueError("Meta contains no readable file records")
+        length = struct.unpack("<I", f.read(4))[0]
+        encrypted = f.read(length)
+        if len(encrypted) != length:
+            raise ValueError("Meta folder table is truncated")
+        decrypted = ice.decrypt(encrypted)
         folders = self._split_folders(decrypted)
         for b in self.fileBlocks:
             if 0 <= b.folderNum < len(folders):
                 b.folderName = folders[b.folderNum]
 
-        enc_len = int.from_bytes(f.read(4), "little")
-        names = ice.decrypt(f.read(enc_len)).split(b"\x00")
+        enc_len = struct.unpack("<I", f.read(4))[0]
+        encrypted = f.read(enc_len)
+        if len(encrypted) != enc_len:
+            raise ValueError("Meta filename table is truncated")
+        names = ice.decrypt(encrypted).split(b"\x00")
         for b in self.fileBlocks:
             if 0 <= b.fileNum < len(names):
                 b.fileName = decode_name(names[b.fileNum])

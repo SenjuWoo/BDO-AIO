@@ -44,6 +44,20 @@ class MetaSelectionTests(unittest.TestCase):
         folder_pacs = self.run_dry("--meta", "pad00000.BDOAIO-VANILLA.meta")
         self.assertEqual(folder_pacs.call_args.args[1], "pad00000.BDOAIO-VANILLA.meta")
 
+    def test_temporary_meta_copy_is_removed_on_parser_failure(self) -> None:
+        copies = []
+
+        def broken_meta(work, ice):
+            copies.append(work)
+            self.assertEqual((work / "pad00000.meta").read_bytes(), b"live")
+            raise ValueError("bad meta")
+
+        with patch.object(partcut_recut, "IceDecipher"), patch.object(partcut_recut, "MetaFile", side_effect=broken_meta):
+            with self.assertRaisesRegex(ValueError, "bad meta"):
+                partcut_recut.folder_pacs(self.dir, "pad00000.meta", "1_Pc/3_PEW/Armor/9_Upperbody")
+        self.assertEqual(len(copies), 1)
+        self.assertFalse(copies[0].exists())
+
 
 if __name__ == "__main__":
     unittest.main()

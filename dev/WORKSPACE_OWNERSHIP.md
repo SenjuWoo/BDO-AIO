@@ -1,5 +1,15 @@
 # Workspace ownership
 
-The authoritative product is the user-supplied Git checkout. BDO-AIO 2.4.1 is a wording-only hotfix based on published v2.4.0 tag commit `75c2dd0`; v2.4.0 remains the rollback release.
+Updated 2026-09-10. Authoritative source is
+`C:/Users/karlo/Documents/Apps/BDO-AIO-git-push`; the user's full local app is
+`C:/Users/karlo/Documents/Apps/BDO-AIO`. Reference assets under
+`Z:/Backup/BDO-mods-assets` remain read-only.
 
-Per the user's explicit no-duplicate/no-output preference, this patch is made directly in the authoritative checkout. The immutable parent commit and published GitHub artifacts are the rollback boundary. The game, PAZ, tool-reference, save, and deployment trees remain read-only during development.
+The user requested review and continuation of the app plan, with pushing/publishing
+deferred until edits are finished. Preserve existing branch work. Game PAZ, live
+staging and game saves remain read-only during development.
+
+Validated runtime files may be synchronized to the full local app with a scoped
+allowlist and exact-file backups. Do not mirror/delete its pack, personal config,
+backups or private content. Machine-local Python selection belongs only in local
+config, not shipped defaults. A local app update does not authorize game injection.

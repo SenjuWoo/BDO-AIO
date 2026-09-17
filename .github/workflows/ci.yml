@@ -26,8 +26,9 @@ jobs:
         run: |
           $problems = @()
           Get-ChildItem -Recurse -Include *.ps1,*.psm1,*.psd1 -File | ForEach-Object {
+            $tokens = $null
             $errs = $null
-            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$errs)
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errs)
             if ($errs) {
               $problems += $errs | ForEach-Object { "$($_.Extent.File):$($_.Extent.StartLineNumber): $($_.Message)" }
             }
@@ -49,6 +50,14 @@ jobs:
             throw "PSScriptAnalyzer reported $($issues.Count) error-level issue(s)."
           }
           Write-Host "PSScriptAnalyzer: no error-level issues."
+
+      - name: Windows PowerShell regression tests
+        shell: pwsh
+        run: |
+          Get-ChildItem tools/bdo_meta/test_*.ps1 -File | ForEach-Object {
+            & powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File $_.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Regression failed: $($_.Name)" }
+          }
 
   data:
     name: JSON + Python validation
@@ -82,3 +91,9 @@ jobs:
           } else {
             Write-Host "No Python files found; skipping."
           }
+
+      - name: Python regression tests
+        shell: pwsh
+        run: |
+          python -B -m unittest discover -s tools/bdo_meta -p 'test_*.py'
+          if ($LASTEXITCODE -ne 0) { throw "Python regression tests failed." }

@@ -195,8 +195,15 @@ def classify_meta(
             "matches_latest_backup": None,
         }
 
-    st = meta_path.stat()
-    meta_hash = sha256_file(meta_path)
+    try:
+        st = meta_path.stat()
+        meta_hash = sha256_file(meta_path)
+    except OSError as exc:
+        return {
+            "state": "UNKNOWN", "detail": f"Could not read live meta: {exc}",
+            "meta_sha256": None, "meta_size": None, "latest_backup": None,
+            "matches_latest_backup": None,
+        }
     meta_size = st.st_size
     meta_mtime = datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat()
     current_version = _safe_meta_version(meta_path)
@@ -326,11 +333,11 @@ def main() -> int:
         if staged:
             overall_detail += " files_to_patch is staged, but staging does not prove what the game meta uses."
     elif meta_state == "MODDED" and staged:
-        overall = "INJECTED + STAGED"
-        overall_detail = "Meta is modded (injector applied) and files_to_patch still has content."
+        overall = "META MODIFIED + STAGED"
+        overall_detail = "Meta differs from the reference and files_to_patch has content. This does not prove which staged choices are active."
     elif meta_state == "MODDED" and not staged:
-        overall = "INJECTED (no stage folder content)"
-        overall_detail = "Meta is modded but files_to_patch is empty/missing — inject was applied earlier."
+        overall = "META MODIFIED (no staged files)"
+        overall_detail = "Meta differs from the reference, but files_to_patch is empty/missing. The cause of the modification is not verified."
     elif meta_state == "RESTORED" and staged:
         overall = "STAGED only (not injected yet)"
         overall_detail = "files_to_patch has mods ready — run Meta Injector to apply into pad00000.meta."

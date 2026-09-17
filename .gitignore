@@ -1,6 +1,10 @@
 # User local settings (may contain machine paths)
 config.json
 config.local.json
+config.json.bak
+config.json.*.tmp
+logs/
+.impeccable/
 
 # Huge third-party mod payload (~1.8GB, 40k+ files) â€” NOT for the git tree.
 # This is intentional so clones stay small. The pack is NOT discarded:

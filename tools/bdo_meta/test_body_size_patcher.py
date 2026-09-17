@@ -8,6 +8,38 @@ import body_size_patcher as bsp
 
 
 class MetaBlockTests(unittest.TestCase):
+    def test_missing_marker_fails_instead_of_looping_at_eof(self) -> None:
+        class BoundedStream(io.BytesIO):
+            reads = 0
+
+            def read(self, count=-1):
+                self.reads += 1
+                if self.reads > 20:
+                    raise AssertionError("parser kept reading past EOF")
+                return super().read(count)
+
+        meta = bsp.MetaFile.__new__(bsp.MetaFile)
+        with self.assertRaisesRegex(ValueError, "marker"):
+            meta._read(BoundedStream(struct.pack("<III", 3435, 0, 1)), None)
+
+    def test_minimal_meta_and_truncated_tables(self) -> None:
+        class PlainIce:
+            def decrypt(self, data):
+                return data
+
+        folders = b"\x00" * 8 + b"character\x00"
+        names = b"example.xml\x00"
+        data = (struct.pack("<III", 3435, 0, 1)
+                + struct.pack("<7I", 631490897, 0, 0, 0, 0, 4, 4)
+                + struct.pack("<I", len(folders)) + folders
+                + struct.pack("<I", len(names)) + names)
+        meta = bsp.MetaFile.__new__(bsp.MetaFile)
+        meta._read(io.BytesIO(data), PlainIce())
+        self.assertEqual((meta.fileBlocks[0].folderName, meta.fileBlocks[0].fileName), ("character", "example.xml"))
+        for cut in (len(data) - 1, 45, 35):
+            with self.subTest(cut=cut), self.assertRaises((ValueError, struct.error)):
+                meta._read(io.BytesIO(data[:cut]), PlainIce())
+
     def test_file_block_reads_one_fixed_width_little_endian_record(self) -> None:
         values = (11, 22, 33, 44, 55, 66, 77)
         block = bsp.FileBlock(io.BytesIO(struct.pack("<7I", *values)))

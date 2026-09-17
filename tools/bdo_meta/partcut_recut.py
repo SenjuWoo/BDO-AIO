@@ -48,9 +48,10 @@ def folder_pacs(paz: pathlib.Path, meta_name: str, folder: str) -> list[str]:
     """Every .pac the archives hold in `folder`, as partcutdesc-style paths."""
     dll = pathlib.Path(__file__).resolve().parent / "ice_decipher.dll"
     ice = IceDecipher(dll)
-    work = pathlib.Path(tempfile.mkdtemp())
-    shutil.copy2(paz / meta_name, work / "pad00000.meta")
-    meta = MetaFile(work, ice)
+    with tempfile.TemporaryDirectory(prefix="bdo-aio-recut-") as temp:
+        work = pathlib.Path(temp)
+        shutil.copy2(paz / meta_name, work / "pad00000.meta")
+        meta = MetaFile(work, ice)
     want = f"character/model/{folder.lower()}"
     out = []
     for b in meta.fileBlocks:

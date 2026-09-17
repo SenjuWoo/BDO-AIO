@@ -1,0 +1,224 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework" Title="BDO Modding AIO" Width="1120" Height="860" MinWidth="940" MinHeight="680" WindowStyle="None" ResizeMode="CanResize" WindowStartupLocation="CenterScreen" Background="#F6F3EC" FontFamily="Segoe UI" FontSize="14" Foreground="#222A2D" UseLayoutRounding="True">
+ <shell:WindowChrome.WindowChrome><shell:WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/></shell:WindowChrome.WindowChrome>
+ <Window.Resources>
+  <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+  <Style x:Key="Help" TargetType="TextBlock"><Setter Property="Foreground" Value="#586162"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="Margin" Value="0,5,0,0"/><Setter Property="FontSize" Value="13"/></Style>
+  <Style x:Key="Heading" TargetType="TextBlock"><Setter Property="FontSize" Value="20"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,26,0,12"/></Style>
+  <Style TargetType="Button">
+   <Setter Property="MinHeight" Value="38"/><Setter Property="Padding" Value="15,8"/><Setter Property="Background" Value="#E9E4D9"/><Setter Property="Foreground" Value="#222A2D"/><Setter Property="BorderBrush" Value="#C7BFAF"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Cursor" Value="Hand"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+    <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5"><ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/></Border>
+    <ControlTemplate.Triggers>
+     <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonBorder" Property="Background" Value="#D5C6A6"/></Trigger>
+     <Trigger Property="IsPressed" Value="True"><Setter TargetName="ButtonBorder" Property="Background" Value="#C3AE80"/></Trigger>
+     <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#1D6565"/><Setter TargetName="ButtonBorder" Property="BorderThickness" Value="2"/></Trigger>
+     <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/><Setter Property="Cursor" Value="Arrow"/></Trigger>
+    </ControlTemplate.Triggers>
+   </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style x:Key="Primary" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Background" Value="#C6A566"/><Setter Property="BorderBrush" Value="#A5864D"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+  <Style x:Key="CaptionButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Width" Value="46"/><Setter Property="Height" Value="44"/><Setter Property="MinHeight" Value="0"/><Setter Property="Padding" Value="0"/><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="#E6D5B1"/><Setter Property="BorderThickness" Value="0"/><Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="Caption" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Caption" Property="Background" Value="#35413E"/></Trigger><Trigger Property="IsPressed" Value="True"><Setter TargetName="Caption" Property="Background" Value="#486053"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Caption" Property="BorderBrush" Value="#C6A566"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style x:Key="ScrollPage" TargetType="RepeatButton"><Setter Property="Focusable" Value="False"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate></Setter.Value></Setter></Style>
+  <Style x:Key="ScrollThumb" TargetType="Thumb">
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Thumb"><Border x:Name="Grip" CornerRadius="4" Background="#929D96" Margin="3"/><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Grip" Property="Background" Value="#61756C"/></Trigger><Trigger Property="IsDragging" Value="True"><Setter TargetName="Grip" Property="Background" Value="#315C51"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType="ScrollBar">
+   <Setter Property="Background" Value="Transparent"/><Setter Property="Width" Value="14"/><Setter Property="MinWidth" Value="14"/><Setter Property="Stylus.IsPressAndHoldEnabled" Value="False"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar"><Grid Background="{TemplateBinding Background}"><Track x:Name="PART_Track" IsDirectionReversed="True" Orientation="Vertical"><Track.DecreaseRepeatButton><RepeatButton Command="ScrollBar.PageUpCommand" Style="{StaticResource ScrollPage}"/></Track.DecreaseRepeatButton><Track.Thumb><Thumb MinHeight="28" Style="{StaticResource ScrollThumb}"/></Track.Thumb><Track.IncreaseRepeatButton><RepeatButton Command="ScrollBar.PageDownCommand" Style="{StaticResource ScrollPage}"/></Track.IncreaseRepeatButton></Track></Grid></ControlTemplate></Setter.Value></Setter>
+   <Style.Triggers><Trigger Property="Orientation" Value="Horizontal"><Setter Property="Width" Value="Auto"/><Setter Property="MinWidth" Value="0"/><Setter Property="Height" Value="14"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar"><Track x:Name="PART_Track" Orientation="Horizontal"><Track.DecreaseRepeatButton><RepeatButton Command="ScrollBar.PageLeftCommand" Style="{StaticResource ScrollPage}"/></Track.DecreaseRepeatButton><Track.Thumb><Thumb MinWidth="28" Style="{StaticResource ScrollThumb}"/></Track.Thumb><Track.IncreaseRepeatButton><RepeatButton Command="ScrollBar.PageRightCommand" Style="{StaticResource ScrollPage}"/></Track.IncreaseRepeatButton></Track></ControlTemplate></Setter.Value></Setter></Trigger></Style.Triggers>
+  </Style>
+  <Style TargetType="TextBox"><Setter Property="MinHeight" Value="38"/><Setter Property="Padding" Value="10,7"/><Setter Property="Background" Value="#FFFEFA"/><Setter Property="Foreground" Value="#222A2D"/><Setter Property="BorderBrush" Value="#B5B8B3"/><Setter Property="SelectionBrush" Value="#A8C5C1"/><Setter Property="VerticalContentAlignment" Value="Center"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TextBox"><Border x:Name="Field" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5"><ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/></Border><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Field" Property="BorderBrush" Value="#315C51"/><Setter TargetName="Field" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType="ComboBox"><Setter Property="MinHeight" Value="38"/><Setter Property="Padding" Value="10,7"/><Setter Property="Foreground" Value="#222A2D"/><Setter Property="Background" Value="#FFFEFA"/><Setter Property="BorderBrush" Value="#B5B8B3"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox"><Grid>
+    <ToggleButton Focusable="False" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" ClickMode="Press"><ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border x:Name="Box" Background="#FFFEFA" BorderBrush="#B5B8B3" BorderThickness="1" CornerRadius="5"><Path Data="M 0 0 L 4 4 L 8 0" Stroke="#586162" StrokeThickness="1.5" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,14,0"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="#315C51"/></Trigger></ControlTemplate.Triggers></ControlTemplate></ToggleButton.Template></ToggleButton>
+    <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" Margin="12,7,34,7" VerticalAlignment="Center" IsHitTestVisible="False"/>
+    <Border x:Name="FocusBorder" BorderThickness="2" CornerRadius="5" BorderBrush="Transparent" IsHitTestVisible="False"/>
+    <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True" Focusable="False"><Border Background="#FFFEFA" BorderBrush="#B5B8B3" BorderThickness="1" CornerRadius="5" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" MaxHeight="300" Padding="4"><ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/></ScrollViewer></Border></Popup>
+   </Grid><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="FocusBorder" Property="BorderBrush" Value="#315C51"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType="ComboBoxItem"><Setter Property="Padding" Value="10,7"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem"><Border x:Name="Item" Background="Transparent" CornerRadius="3" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Item" Property="Background" Value="#DBE5DD"/></Trigger><Trigger Property="IsSelected" Value="True"><Setter TargetName="Item" Property="Background" Value="#E9E4D9"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+  <Style TargetType="TabItem"><Setter Property="Padding" Value="18,12"/><Setter Property="Foreground" Value="#586162"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TabItem"><Border x:Name="Tab" BorderThickness="0,0,0,2" BorderBrush="Transparent" Padding="{TemplateBinding Padding}"><ContentPresenter x:Name="Header" ContentSource="Header"/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="Tab" Property="BorderBrush" Value="#315C51"/><Setter Property="Foreground" Value="#222A2D"/><Setter TargetName="Header" Property="TextElement.FontWeight" Value="SemiBold"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Tab" Property="Background" Value="#E9E4D9"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Tab" Property="Background" Value="#DBE5DD"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+  <Style TargetType="TabControl"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TabControl"><DockPanel><TabPanel DockPanel.Dock="Top" IsItemsHost="True" Margin="0,0,0,24"/><ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent"/></DockPanel></ControlTemplate></Setter.Value></Setter></Style>
+  <Style TargetType="Label"><Setter Property="Foreground" Value="#222A2D"/></Style>
+  <Style TargetType="CheckBox"><Setter Property="MinHeight" Value="34"/><Setter Property="Foreground" Value="#222A2D"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="Padding" Value="8,0,0,0"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="CheckBox"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="20"/><ColumnDefinition/></Grid.ColumnDefinitions><Border x:Name="Check" Width="18" Height="18" Background="#FFFEFA" BorderBrush="#7F8A83" BorderThickness="1" CornerRadius="4" VerticalAlignment="Center"><Path x:Name="Tick" Data="M 3 8 L 6 11 L 13 4" Stroke="#FFFFFF" StrokeThickness="1.8" Visibility="Collapsed"/></Border><ContentPresenter Grid.Column="1" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" RecognizesAccessKey="True"/></Grid><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="Check" Property="Background" Value="#315C51"/><Setter TargetName="Tick" Property="Visibility" Value="Visible"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Check" Property="BorderBrush" Value="#315C51"/><Setter TargetName="Check" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Check" Property="BorderBrush" Value="#987337"/><Setter TargetName="Check" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType="Separator"><Setter Property="Margin" Value="0,20,0,0"/><Setter Property="Background" Value="#DED9CF"/></Style>
+ </Window.Resources>
+ <Grid x:Name="WindowRoot">
+  <Grid.RowDefinitions><RowDefinition Height="44"/><RowDefinition/></Grid.RowDefinitions>
+  <Border Background="#182024"><Grid><TextBlock Text="BDO / MODDING AIO" Foreground="#CBD0CB" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="24,0,150,0"/>
+   <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+    <Button x:Name="MinimizeButton" Style="{StaticResource CaptionButton}" AutomationProperties.Name="Minimize" ToolTip="Minimize"><Path Data="M 0 5 L 10 5" Stroke="#E6D5B1" StrokeThickness="1.2"/></Button>
+    <Button x:Name="MaximizeButton" Style="{StaticResource CaptionButton}" AutomationProperties.Name="Maximize" ToolTip="Maximize or restore"><Path x:Name="MaximizeIcon" Data="M 0 0 L 10 0 10 10 0 10 Z" Stroke="#E6D5B1" StrokeThickness="1.2"/></Button>
+    <Button x:Name="CloseButton" Style="{StaticResource CaptionButton}" AutomationProperties.Name="Close" ToolTip="Close"><Path Data="M 0 0 L 10 10 M 10 0 L 0 10" Stroke="#E6D5B1" StrokeThickness="1.2"/></Button>
+   </StackPanel>
+  </Grid></Border>
+ <Grid Grid.Row="1">
+  <Grid.ColumnDefinitions><ColumnDefinition Width="210"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+  <Border Background="#182024"><DockPanel Margin="22,30,18,24">
+   <StackPanel DockPanel.Dock="Top" Margin="0,0,0,34"><TextBlock Text="BDO" Foreground="#E6D5B1" FontSize="32" FontWeight="SemiBold"/><TextBlock Text="MODDING AIO" Foreground="#CBD0CB" FontSize="13" Margin="1,2,0,0"/></StackPanel>
+   <StackPanel DockPanel.Dock="Bottom"><TextBlock x:Name="BuildLabel" Text="Local development" Foreground="#CBD0CB" FontSize="12"/><TextBlock Text="Your files. Your choices." Foreground="#AEB9B5" FontSize="12" Margin="0,6,0,0"/></StackPanel>
+   <ListBox x:Name="Nav" Background="Transparent" BorderThickness="0" Foreground="#D2D9D4" SelectedIndex="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Pages">
+    <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem">
+     <Setter Property="Padding" Value="12,13"/><Setter Property="Margin" Value="0,0,0,6"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+     <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="NavBorder" CornerRadius="5" Background="Transparent"><ContentPresenter Margin="{TemplateBinding Padding}"/></Border>
+      <ControlTemplate.Triggers>
+       <Trigger Property="IsSelected" Value="True"><Setter TargetName="NavBorder" Property="Background" Value="#35413E"/><Setter Property="Foreground" Value="#F4E8CB"/><Setter Property="FontWeight" Value="SemiBold"/></Trigger>
+       <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="NavBorder" Property="Background" Value="#2D3737"/></Trigger>
+       <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="NavBorder" Property="BorderBrush" Value="#C6A566"/><Setter TargetName="NavBorder" Property="BorderThickness" Value="1"/></Trigger>
+      </ControlTemplate.Triggers>
+     </ControlTemplate></Setter.Value></Setter>
+    </Style></ListBox.ItemContainerStyle>
+   <ListBoxItem Content="Overview" Tag="Overview"/><ListBoxItem Content="Mod choices" Tag="Choices"/><ListBoxItem Content="Body limits" Tag="Body"/><ListBoxItem Content="Detailed editor" Tag="Details"/><ListBoxItem Content="Recovery &amp; updates" Tag="Recovery"/><ListBoxItem Content="Graphics &amp; performance" Tag="Graphics"/><ListBoxItem Content="Tools" Tag="Tools"/><ListBoxItem Content="Activity" Tag="Activity"/>
+   </ListBox>
+  </DockPanel></Border>
+  <Grid Grid.Column="1">
+   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+   <Grid Margin="32,26,32,22"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <StackPanel><TextBlock x:Name="PageTitle" Text="Overview" FontSize="27" FontWeight="SemiBold"/><TextBlock x:Name="PageSubtitle" Text="A clear path from saved choices to a verified patch." Style="{StaticResource Help}"/></StackPanel>
+    <Button x:Name="RefreshButton" Grid.Column="1" Content="_Refresh status" VerticalAlignment="Center" Margin="16,0,0,0"/>
+   </Grid>
+   <ScrollViewer x:Name="PageScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="32,0,32,28"><Grid>
+    <StackPanel x:Name="OverviewPanel">
+     <Border Background="#253230" CornerRadius="7" Padding="24"><StackPanel>
+      <TextBlock x:Name="StatusTitle" Text="Choose your game folder" FontSize="25" FontWeight="SemiBold" Foreground="#F4E8CB"/>
+      <TextBlock x:Name="StatusDetail" Text="Point to the PAZ folder containing pad00000.meta to begin." Foreground="#D0DAD3" Margin="0,8,0,0"/>
+      <TextBlock x:Name="StatusUpdated" Text="No scan yet" Foreground="#B9C9BE" FontSize="12" Margin="0,14,0,0"/>
+     </StackPanel></Border>
+     <Grid Margin="0,20,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+      <StackPanel><TextBlock Text="Client version" Style="{StaticResource Help}"/><TextBlock x:Name="VersionValue" Text="Not scanned" FontWeight="SemiBold" Margin="0,5,0,0"/></StackPanel>
+      <StackPanel Grid.Column="1"><TextBlock Text="Vanilla reference" Style="{StaticResource Help}"/><TextBlock x:Name="BackupValue" Text="Not scanned" FontWeight="SemiBold" Margin="0,5,0,0"/></StackPanel>
+      <StackPanel Grid.Column="2"><TextBlock Text="Staged files" Style="{StaticResource Help}"/><TextBlock x:Name="FilesValue" Text="Not scanned" FontWeight="SemiBold" Margin="0,5,0,0"/></StackPanel>
+     </Grid>
+     <TextBlock Text="Game location" Style="{StaticResource Heading}"/>
+     <Label Content="_PAZ folder" Target="{Binding ElementName=PazPath}" Padding="0" Margin="0,0,0,6"/>
+     <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="PazPath" AutomationProperties.Name="Game PAZ folder"/><Button x:Name="BrowseButton" Grid.Column="1" Content="_Browse..." Margin="10,0,0,0"/></Grid>
+     <DockPanel Margin="0,6,0,0"><Button x:Name="PythonButton" Content="Choose Python..." DockPanel.Dock="Right" Margin="12,0,0,0"/><TextBlock x:Name="ChecksSummary" Text="Dependencies will be checked in the background." Style="{StaticResource Help}" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="Apply your choices" Style="{StaticResource Heading}"/>
+     <TextBlock x:Name="ChoicesSummary" Style="{StaticResource Help}"/>
+     <Grid Margin="0,16,0,18"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+      <StackPanel Margin="0,0,16,0"><TextBlock Text="1  Prepare" FontWeight="SemiBold"/><TextBlock Text="Deploy Midnight and generate your selected options." Style="{StaticResource Help}"/></StackPanel>
+      <StackPanel Grid.Column="1" Margin="0,0,16,0"><TextBlock Text="2  PartCutGen" FontWeight="SemiBold"/><TextBlock Text="Generate part cuts in the tool's console." Style="{StaticResource Help}"/></StackPanel>
+      <StackPanel Grid.Column="2"><TextBlock Text="3  Inject &amp; verify" FontWeight="SemiBold"/><TextBlock Text="Apply files, then check version and archive references." Style="{StaticResource Help}"/></StackPanel>
+     </Grid>
+     <WrapPanel><Button x:Name="ApplyButton" Tag="Wizard" Content="_Apply saved choices" Style="{StaticResource Primary}" Margin="0,0,10,8"/><Button Tag="VerifyMeta" Content="Verify current meta" Margin="0,0,10,8"/><Button x:Name="StageFolderButton" Content="Open staged files" Margin="0,0,0,8"/></WrapPanel>
+     <TextBlock Text="Close the game and its launcher first. Tool prompts still open in a console; the dashboard stays responsive." Style="{StaticResource Help}"/>
+    </StackPanel>
+    <StackPanel x:Name="ChoicesPanel" Visibility="Collapsed">
+     <TextBlock Text="Midnight deployment" FontSize="20" FontWeight="SemiBold"/><TextBlock Text="Choose who and what the base pack affects." Style="{StaticResource Help}"/>
+     <Label Content="_Gender" Target="{Binding ElementName=GenderBox}" Padding="0" Margin="0,18,0,6"/><ComboBox x:Name="GenderBox" AutomationProperties.Name="Gender"/>
+     <Label Content="_Armor coverage" Target="{Binding ElementName=ArmorBox}" Padding="0" Margin="0,16,0,6"/><ComboBox x:Name="ArmorBox" AutomationProperties.Name="Armor coverage"/>
+     <CheckBox x:Name="XyzwCheck" Content="Include XYZW outfit collections" Margin="0,12,0,0"/>
+     <Separator/><TextBlock Text="Hidden equipment" Style="{StaticResource Heading}"/>
+     <WrapPanel><CheckBox x:Name="hideGloves" Content="Gloves" Margin="0,0,22,0"/><CheckBox x:Name="hideBoots" Content="Boots" Margin="0,0,22,0"/><CheckBox x:Name="hideHelmets" Content="Helmets" Margin="0,0,22,0"/><CheckBox x:Name="hideWeapons" Content="Weapons" Margin="0,0,22,0"/><CheckBox x:Name="hideStockings" Content="Stockings"/></WrapPanel>
+     <TextBlock x:Name="SlotScope" Style="{StaticResource Help}"/>
+     <Label Content="Class filter (blank = all selected-gender classes)" Target="{Binding ElementName=SlotClasses}" Padding="0" Margin="0,14,0,6"/><TextBox x:Name="SlotClasses" AutomationProperties.Name="Hidden equipment class prefixes"/>
+     <TextBlock Text="Use comma-separated prefixes, e.g. pew,pdw for Ranger and Dark Knight or phm,pcm for Warrior and Striker. Your gender filter still applies." Style="{StaticResource Help}"/>
+     <Separator/><TextBlock Text="Additional options" Style="{StaticResource Heading}"/>
+     <Label Content="_Censorship textures" Target="{Binding ElementName=CensorshipBox}" Padding="0" Margin="0,0,0,6"/><ComboBox x:Name="CensorshipBox" AutomationProperties.Name="Censorship textures"/>
+     <TextBlock x:Name="AdvancedSummary" Style="{StaticResource Help}" Margin="0,18,0,14"/>
+     <Button x:Name="DetailsButton" Content="Edit class styles &amp; meshes" HorizontalAlignment="Left"/>
+     <TextBlock Text="Fine-tune pubic hair and genital meshes in the Detailed editor. All choices share the same Save settings button; nothing is generated until you apply." Style="{StaticResource Help}"/>
+    </StackPanel>
+    <StackPanel x:Name="BodyPanel" Visibility="Collapsed">
+     <DockPanel><Button x:Name="RecommendedButton" DockPanel.Dock="Right" Content="Use recommended" Margin="16,0,0,0"/><TextBlock Text="Independent slider ceilings" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="These values raise maximum slider limits. They do not apply a body shape or change the game's default proportions." Style="{StaticResource Help}" Margin="0,12,0,0"/>
+     <TextBlock Text="Values: 1.00 to 99.00. Leave an axis blank to keep its vanilla limit. Protected axes are omitted." Style="{StaticResource Help}"/>
+     <StackPanel x:Name="BodyFields" Margin="0,22,0,0"/>
+     <Border BorderBrush="#DED9CF" BorderThickness="0,1,0,0" Margin="0,16,0,0" Padding="0,16,0,0"><TextBlock Text="Butt controls shape the cheeks. Pelvis Z is the main overall pelvis / ass-size control, affecting the front groin and rear. Belly X is the explicit lower-torso length exception." Style="{StaticResource Help}"/></Border>
+    </StackPanel>
+    <StackPanel x:Name="DetailsPanel" Visibility="Collapsed">
+     <TabControl x:Name="DetailTabs" AutomationProperties.Name="Detailed options">
+      <TabItem Header="Pubic hair"><StackPanel>
+       <DockPanel><Button x:Name="PubicPresetButton" Content="Use immersive preset" DockPanel.Dock="Right" Margin="16,0,0,0"/><TextBlock Text="Individual class styles" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
+       <TextBlock Text="These five classes own their body texture. Off leaves that class untouched; Shaved is an applied style." Style="{StaticResource Help}" Margin="0,8,0,18"/>
+       <StackPanel x:Name="PubicFields"/>
+       <TextBlock Text="Shared-texture group" Style="{StaticResource Heading}"/>
+       <ComboBox x:Name="SharedPubicBox" AutomationProperties.Name="Pubic style for all thirteen shared-texture classes"/>
+       <TextBlock x:Name="SharedPubicHelp" Style="{StaticResource Help}"/>
+       <TextBlock x:Name="PubicLegacyNotice" Foreground="#993B31" TextWrapping="Wrap" Margin="0,10,0,0"/>
+       <TextBlock Text="Corsair: no compatible hair bin in this pack. Existing legacy selections are retained unless you clear all styles." Style="{StaticResource Help}" Margin="0,14,0,12"/>
+       <WrapPanel><Button x:Name="PubicClearButton" Content="Clear all styles" Margin="0,0,10,0"/><Button x:Name="PubicPreviewButton" Content="View style reference"/></WrapPanel>
+       <Image x:Name="PubicPreview" Visibility="Collapsed" Stretch="Uniform" Margin="0,18,0,0" AutomationProperties.Name="Bundled pubic hair style reference"/>
+      </StackPanel></TabItem>
+      <TabItem Header="Female mesh"><StackPanel>
+       <TextBlock Text="Authored 3D vagina meshes" FontSize="20" FontWeight="SemiBold"/>
+       <TextBlock Text="Available only for these ten classes. Each PAC includes the class's body and skin; meshes are never borrowed from another class." Style="{StaticResource Help}" Margin="0,8,0,18"/>
+       <CheckBox x:Name="FemaleMeshEnabled" Content="Enable female 3D vagina meshes"/>
+       <UniformGrid x:Name="FemaleMeshFields" Columns="2" Margin="0,16,0,12"/>
+       <Button x:Name="FemaleAllButton" Content="Select all supported classes" HorizontalAlignment="Left"/>
+       <TextBlock Text="Select at least one class when enabled. Switch the option off to generate no female genital mesh. These selections do not replace your Midnight armor coverage." Style="{StaticResource Help}" Margin="0,16,0,0"/>
+      </StackPanel></TabItem>
+      <TabItem Header="Male mesh"><StackPanel>
+       <TextBlock Text="Native male meshes" FontSize="20" FontWeight="SemiBold"/>
+       <TextBlock Text="Warrior, Berserker, Musa, Wizard, Ninja and Striker only. Skin tone can differ from the base body; unsupported classes are not assigned donor meshes." Style="{StaticResource Help}" Margin="0,8,0,18"/>
+       <Label Content="Style mode" Target="{Binding ElementName=MaleModeBox}" Padding="0" Margin="0,0,0,6"/><ComboBox x:Name="MaleModeBox" AutomationProperties.Name="Male mesh style mode"/>
+       <StackPanel x:Name="MaleMeshFields" Margin="0,22,0,0"/>
+       <TextBlock Text="Per-class choices are kept when switching modes, so you can return to your custom setup." Style="{StaticResource Help}"/>
+      </StackPanel></TabItem>
+     </TabControl>
+    </StackPanel>
+    <StackPanel x:Name="RecoveryPanel" Visibility="Collapsed">
+     <DockPanel><Button x:Name="RecoveryCheckButton" Content="Check recovery options" DockPanel.Dock="Right" Margin="16,0,0,0"/><TextBlock x:Name="RecoveryTitle" Text="Review before changing anything" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="Checks read the meta, backup and archive bounds. They do not patch, repair or restore the game." Style="{StaticResource Help}" Margin="0,10,0,16"/>
+     <TextBlock x:Name="RecoveryEvidence" Text="No recovery preview yet. Check options to see what is available for this installation." TextWrapping="Wrap"/>
+     <Label Content="Recovery action" Target="{Binding ElementName=RecoveryChoice}" Padding="0" Margin="0,24,0,6"/><ComboBox x:Name="RecoveryChoice" AutomationProperties.Name="Recovery action"/>
+     <Border BorderBrush="#DED9CF" BorderThickness="0,1,0,1" Padding="0,16" Margin="0,18,0,16"><StackPanel>
+      <TextBlock x:Name="RecoveryReason" Text="Select an action, then check recovery options." TextWrapping="Wrap" FontWeight="SemiBold"/>
+      <TextBlock x:Name="RecoveryChanges" Text="Your saved settings and files_to_patch are kept by all native recovery actions." Style="{StaticResource Help}"/>
+      <TextBox x:Name="RecoveryFiles" Visibility="Collapsed" Height="140" IsReadOnly="True" AcceptsReturn="True" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Margin="0,12,0,0" AutomationProperties.Name="Exact archive move list"/>
+     </StackPanel></Border>
+     <CheckBox x:Name="RecoveryAcknowledge" IsEnabled="False"><TextBlock x:Name="RecoveryAcknowledgementText" Text="Review the preview before confirming." TextWrapping="Wrap"/></CheckBox>
+     <Button x:Name="RecoveryApplyButton" Content="Apply reviewed action" IsEnabled="False" Style="{StaticResource Primary}" HorizontalAlignment="Left" Margin="0,14,0,0"/>
+     <TextBlock x:Name="RecoveryOutcome" Text="No recovery action has been run in this session." Style="{StaticResource Help}" Margin="0,16,0,0" AutomationProperties.LiveSetting="Polite"/>
+     <WrapPanel Margin="0,12,0,0"><Button x:Name="RecoveryFilesButton" Content="Open retained recovery files" Margin="0,0,10,8"/><Button x:Name="PresetBackupsButton" Content="Open preset backups" Margin="0,0,0,8"/></WrapPanel>
+     <TextBlock Text="After a game update" Style="{StaticResource Heading}"/>
+     <TextBlock Text="1. Let Steam or the game launcher finish patching / repair.&#10;2. Close the game and launcher, then check recovery options again.&#10;3. Create a current-client reference only after patch / repair is complete.&#10;4. Reapply saved choices, complete PartCutGen and inject / verify before playing modded characters." Style="{StaticResource Help}"/>
+     <TextBlock Text="Body limits: loading a character above stock limits while vanilla can clamp and resave its shape. Reapply body limits before loading that character. A local preset backup cannot restore lost server-side values." Foreground="#993B31" TextWrapping="Wrap" Margin="0,14,0,0"/>
+    </StackPanel>
+    <StackPanel x:Name="GraphicsPanel" Visibility="Collapsed">
+     <DockPanel><Button x:Name="GraphicsCheckButton" Content="Preview profile" DockPanel.Dock="Right" Margin="16,0,0,0"/><TextBlock x:Name="GraphicsTitle" Text="Preview before changing GameOption.txt" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="These profiles merge known current-client quality keys into your complete GameOption.txt. They do not replace the file or invent hidden settings." Style="{StaticResource Help}" Margin="0,10,0,16"/>
+     <Label Content="GameOption profile" Target="{Binding ElementName=GraphicsProfile}" Padding="0" Margin="0,8,0,6"/><ComboBox x:Name="GraphicsProfile" AutomationProperties.Name="GameOption graphics profile"/>
+     <TextBlock x:Name="GraphicsEvidence" Text="Choose a profile and preview it. Preview reads the current file and makes no changes." TextWrapping="Wrap" Margin="0,14,0,0"/>
+     <TextBox x:Name="GraphicsPreview" Height="150" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" Margin="0,14,0,16" AutomationProperties.Name="Graphics profile preview"/>
+     <CheckBox x:Name="GraphicsAcknowledge" IsEnabled="False"><TextBlock Text="I reviewed the changed-key list. A complete GameOption backup will be created beside the current file before applying." TextWrapping="Wrap"/></CheckBox>
+     <Button x:Name="GraphicsApplyButton" Content="Apply reviewed profile" IsEnabled="False" Style="{StaticResource Primary}" HorizontalAlignment="Left" Margin="0,14,0,0"/>
+     <TextBlock x:Name="GraphicsOutcome" Text="No graphics profile has been applied in this session." Style="{StaticResource Help}" Margin="0,14,0,0" AutomationProperties.LiveSetting="Polite"/>
+     <Border BorderBrush="#DED9CF" BorderThickness="0,1,0,1" Padding="0,16" Margin="0,20,0,16"><StackPanel>
+      <TextBlock Text="NVIDIA driver profile" FontSize="17" FontWeight="SemiBold"/>
+      <TextBlock x:Name="GraphicsNvidiaStatus" Text="NVIDIA Profile Inspector status will be checked here." Style="{StaticResource Help}" Margin="0,6,0,10" TextWrapping="Wrap"/>
+      <WrapPanel><Button x:Name="GraphicsNvidiaButton" Content="Open NVIDIA Profile Inspector" Margin="0,0,10,8"/><Button x:Name="GraphicsNvidiaReadmeButton" Content="Open driver profile notes" Margin="0,0,0,8"/></WrapPanel>
+      <TextBlock Text="The .nip import stays in NVIDIA Profile Inspector so its own driver confirmation and rollback behavior remain visible. Experimental DLSS / OptiScaler remains separate." Style="{StaticResource Help}" TextWrapping="Wrap"/>
+     </StackPanel></Border>
+     <TextBlock Text="Close Black Desert before applying GameOption or importing the NVIDIA profile. Graphics appearance and FPS still require your in-game retest." Foreground="#7A5A20" TextWrapping="Wrap"/>
+    </StackPanel>
+    <StackPanel x:Name="ToolsPanel" Visibility="Collapsed">
+     <TextBlock Text="Individual pipeline steps" FontSize="20" FontWeight="SemiBold"/><TextBlock Text="Use these when repeating one part of a run. A full apply runs them in order." Style="{StaticResource Help}"/>
+     <WrapPanel Margin="0,14,0,0"><Button Tag="Deploy" Content="Deploy Midnight" Margin="0,0,10,10"/><Button Tag="Restored" Content="Generate selected options" Margin="0,0,10,10"/><Button Tag="PartCut" Content="Run PartCutGen" Margin="0,0,10,10"/><Button Tag="Inject" Content="Inject &amp; verify" Margin="0,0,10,10"/></WrapPanel>
+     <Separator/><TextBlock Text="Checks &amp; recovery" Style="{StaticResource Heading}"/><TextBlock Text="Recovery keeps the existing confirmations and Customization backup safeguards. A status scan does not prove in-game appearance." Style="{StaticResource Help}"/>
+     <WrapPanel Margin="0,14,0,0"><Button Tag="VerifyMeta" Content="Verify current meta" Margin="0,0,10,10"/><Button Tag="VerifyPack" Content="Check pack files" Margin="0,0,10,10"/><Button x:Name="RecoveryPageButton" Content="Recovery &amp; updates" Margin="0,0,10,10"/><Button x:Name="UpdatePageButton" Content="After a game update" Margin="0,0,10,10"/></WrapPanel>
+     <Separator/><TextBlock Text="Graphics &amp; reference" Style="{StaticResource Heading}"/>
+     <WrapPanel><Button x:Name="GraphicsPageButton" Content="Graphics &amp; performance..." Margin="0,0,10,10"/><Button x:Name="GraphicsNvidiaPageButton" Content="NVIDIA profile..." Margin="0,0,10,10"/><Button Tag="Dlss" Content="Experimental upscaling..." Margin="0,0,10,10"/><Button Tag="Guide" Content="Modding guide" Margin="0,0,10,10"/><Button Tag="Menu" Content="Classic console" Margin="0,0,10,10"/></WrapPanel>
+    </StackPanel>
+    <StackPanel x:Name="ActivityPanel" Visibility="Collapsed">
+     <TextBlock x:Name="OperationLabel" Text="No operation is running." FontSize="20" FontWeight="SemiBold"/><TextBlock x:Name="RunTiming" Text="No recorded injection run yet. Timings appear after a run from this build." Style="{StaticResource Help}" Margin="0,8,0,14"/>
+     <ProgressBar x:Name="OperationProgress" Height="4" Visibility="Collapsed" Foreground="#987337" Margin="0,0,0,14"/>
+     <TextBox x:Name="ActivityText" Height="330" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" Padding="14" Text="Tool output and results will appear here. External tools keep their own console windows." AutomationProperties.Name="Operation log"/>
+     <WrapPanel Margin="0,16,0,0"><Button x:Name="LogsButton" Content="Open logs folder" Margin="0,0,10,0"/><Button x:Name="CopyLogButton" Content="Copy visible log"/></WrapPanel>
+    </StackPanel>
+   </Grid></ScrollViewer>
+   <Border Grid.Row="2" BorderBrush="#DED9CF" BorderThickness="0,1,0,0" Background="#EEEBE3" Padding="32,16"><Grid>
+    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <TextBlock x:Name="SaveState" Text="Settings loaded. Nothing applied." AutomationProperties.LiveSetting="Assertive" VerticalAlignment="Center" Margin="0,0,16,0" Foreground="#586162"/>
+    <Button x:Name="ReloadButton" Grid.Column="1" Content="_Reload" Margin="0,0,10,0"/><Button x:Name="SaveButton" Grid.Column="2" Content="_Save settings" Style="{StaticResource Primary}"/>
+   </Grid></Border>
+  </Grid>
+ </Grid>
+ </Grid>
+</Window>

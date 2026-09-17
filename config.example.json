@@ -1,5 +1,6 @@
 {
   "pazFolder": "",
+  "pythonPath": "",
   "gender": "F",
   "armor": "A",
   "xyzwCollections": true,
@@ -14,6 +15,7 @@
   "hideStockings": false,
   "slotHideClasses": "",
   "pubicHairStyle": "none",
+  "pubicHairStyles": "",
   "pubicHairReuse": false,
   "pubicHairClasses": "",
   "censorshipTier": "off",
@@ -28,5 +30,6 @@
   "penisNinja": "none",
   "penisStriker": "none",
   "heishaRoot": "",
+  "lastMetaVersion": 0,
   "lastRun": null
 }

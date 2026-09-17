@@ -1,11 +1,27 @@
 ﻿#Requires -Version 5.1
 # BDO Modding AIO - self-contained 2026 installer (everything under this folder)
+param(
+    [ValidateSet('Menu', 'Wizard', 'Deploy', 'PartCut', 'Inject', 'Restored', 'Options', 'Recovery', 'RecoveryPlan', 'RecoveryRestore', 'RecoverySnapshot', 'RecoveryCleanup', 'GraphicsPlan', 'GraphicsApply', 'Graphics', 'Nvidia', 'Dlss', 'Guide', 'VerifyPack', 'VerifyMeta', 'Regen')]
+    [string]$Action = 'Menu',
+    [string]$ConfigFile,
+    [string]$ResultFile,
+    [string]$PythonPath,
+    [string]$RecoveryToken,
+    [switch]$RecoveryConfirmed,
+    [string]$GraphicsProfile,
+    [string]$GraphicsToken,
+    [switch]$GraphicsConfirmed
+)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $Script:Version = '2.4.2'
 $Script:Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Script:ConfigPath = Join-Path $Script:Root 'config.json'
+if ($ConfigFile) { $Script:ConfigPath = [IO.Path]::GetFullPath($ConfigFile) }
+$Script:ConfigFingerprint = $null
+$Script:DashboardAction = [bool]$ResultFile
+$Script:LastMetaInjectReportPath = $null
 $Script:PackDir = Join-Path $Script:Root 'pack'
 $Script:GraphicsDir = Join-Path $Script:Root 'graphics'
 $Script:NvidiaDir = Join-Path $Script:GraphicsDir 'nvidia'
@@ -22,7 +38,7 @@ $Script:GenitalRoot = Join-Path $Script:Root 'tools\genital_packs'
 $Script:GameOptionTool = Join-Path $Script:Root 'tools\bdo_meta\gameoption_patcher.py'
 $Script:PazStatusTool = Join-Path $Script:Root 'tools\bdo_meta\paz_status_scan.py'
 $Script:InjectStageTool = Join-Path $Script:Root 'tools\bdo_meta\inject_stage_builder.py'
-$Script:PythonExe = $null
+$Script:PythonExe = $PythonPath
 $Script:DefaultHeishaRoot = Join-Path $Script:Root 'heisha'
 # AIO-generated folders under files_to_patch (safe to clear on restore)
 $Script:AioPatchFolderPrefixes = @(
@@ -196,6 +212,7 @@ function Write-MetaInjectReport {
 }
 
 function Pause-Any {
+    if ($Script:DashboardAction) { return }
     Write-Host ''
     Write-Host '  Press any key to continue...' -ForegroundColor DarkGray
     $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
@@ -370,12 +387,17 @@ function Select-FemaleClasses {
 }
 
 function Load-Config {
+    $Script:Config = $null
+    $Script:ConfigFingerprint = $null
     if (Test-Path -LiteralPath $Script:ConfigPath) {
         try {
-            $Script:Config = Get-Content -LiteralPath $Script:ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            $bytes = [IO.File]::ReadAllBytes($Script:ConfigPath)
+            $Script:Config = [Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF) | ConvertFrom-Json
+            if ($Script:Config -isnot [pscustomobject]) { throw 'Expected a JSON object.' }
+            $hasher = [Security.Cryptography.SHA256]::Create()
+            try { $Script:ConfigFingerprint = [BitConverter]::ToString($hasher.ComputeHash($bytes)) } finally { $hasher.Dispose() }
         } catch {
-            Write-Warn 'config.json was unreadable; using defaults.'
-            $Script:Config = $null
+            throw ("Cannot read settings at $($Script:ConfigPath). The file was left untouched. Repair its JSON or restore your backup. " + $_.Exception.Message)
         }
     }
     if (-not $Script:Config) {
@@ -585,9 +607,30 @@ function Save-Config {
         lastMetaVersion = [int]$Script:Config.lastMetaVersion
         lastRun         = $Script:Config.lastRun
     }
-    $json = $out | ConvertTo-Json -Depth 4
+    # Preserve fields owned by newer builds and user extensions.
+    foreach ($property in $Script:Config.PSObject.Properties) {
+        if (-not $out.PSObject.Properties[$property.Name]) {
+            $out | Add-Member -NotePropertyName $property.Name -NotePropertyValue $property.Value
+        }
+    }
+    if (Test-Path -LiteralPath $Script:ConfigPath) {
+        $hasher = [Security.Cryptography.SHA256]::Create()
+        try { $current = [BitConverter]::ToString($hasher.ComputeHash([IO.File]::ReadAllBytes($Script:ConfigPath))) } finally { $hasher.Dispose() }
+        if ($current -ne $Script:ConfigFingerprint) { throw 'Settings changed in another window. Reload them before saving.' }
+    } elseif ($Script:ConfigFingerprint) { throw 'Settings were removed in another window. Reload before saving.' }
+    $json = $out | ConvertTo-Json -Depth 32
     $utf8Bom = New-Object System.Text.UTF8Encoding $true
-    [System.IO.File]::WriteAllText($Script:ConfigPath, $json, $utf8Bom)
+    $temp = $Script:ConfigPath + '.' + [guid]::NewGuid().ToString('N') + '.tmp'
+    try {
+        [IO.File]::WriteAllText($temp, $json, $utf8Bom)
+        if (Test-Path -LiteralPath $Script:ConfigPath) {
+            [IO.File]::Replace($temp, $Script:ConfigPath, ($Script:ConfigPath + '.bak'))
+        } else { [IO.File]::Move($temp, $Script:ConfigPath) }
+        $hasher = [Security.Cryptography.SHA256]::Create()
+        try { $Script:ConfigFingerprint = [BitConverter]::ToString($hasher.ComputeHash([IO.File]::ReadAllBytes($Script:ConfigPath))) } finally { $hasher.Dispose() }
+    } finally {
+        if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Force }
+    }
 }
 
 function Test-IsPazFolder([string]$path) {
@@ -643,7 +686,7 @@ function Test-NipReady {
 
 function Find-NvidiaProfileInspector {
     # 1) User-saved path in config
-    $cfg = [string]$Script:Config.npiPath
+    $cfg = if ($Script:Config -and $Script:Config.PSObject.Properties['npiPath']) { [string]$Script:Config.npiPath } else { '' }
     if ($cfg -and (Test-Path -LiteralPath $cfg)) { return $cfg }
 
     # 2) Bundled with this AIO (preferred for publish)
@@ -703,9 +746,14 @@ function Find-CommonPazCandidates {
 }
 
 function Ensure-Python {
+    param([switch]$ProbeOnly)
     if ($Script:PythonExe -and (Test-Path -LiteralPath $Script:PythonExe)) { return $true }
 
-    $commands = @(Get-Command python.exe -All -ErrorAction SilentlyContinue)
+    $commands = @()
+    if ($Script:Config -and $Script:Config.PSObject.Properties['pythonPath'] -and $Script:Config.pythonPath) {
+        $commands += [pscustomobject]@{ Source = [string]$Script:Config.pythonPath }
+    }
+    $commands += @(Get-Command python.exe -All -ErrorAction SilentlyContinue)
     foreach ($command in $commands) {
         try {
             $resolved = & $command.Source -c 'import sys; print(sys.executable)' 2>$null
@@ -741,6 +789,7 @@ function Ensure-Python {
             return $true
         }
     }
+    if ($ProbeOnly) { return $false }
     Write-Err 'Python is not installed (or not on PATH).'
     Write-Info 'Midnight deploy needs Python once (system install).'
     Write-Host '  Install with:  winget install Python.Python.3.12' -ForegroundColor White
@@ -767,7 +816,8 @@ function Invoke-BdoPythonChecked {
         [string]$Label = 'Python tool'
     )
     try {
-        & $Script:PythonExe @Arguments
+        # stdout is diagnostic text, not part of this function's Boolean result.
+        & $Script:PythonExe @Arguments | ForEach-Object { Write-Host $_ }
         if ($LASTEXITCODE -ne 0) {
             Write-Err ("$Label failed with exit code $LASTEXITCODE")
             return $false
@@ -777,6 +827,15 @@ function Invoke-BdoPythonChecked {
         Write-Err ("$Label failed: " + $_.Exception.Message)
         return $false
     }
+}
+
+function Test-BdoToolsIdle {
+    $running = @(Get-Process -Name 'BlackDesert*', 'BDOLauncher', 'PearlAbyssLauncher', 'PartCutGen', 'Meta Injector', 'Meta Patcher' -ErrorAction SilentlyContinue)
+    if ($running.Count) {
+        Write-Err ('Close the game, launcher and other patch tools first: ' + (($running.ProcessName | Select-Object -Unique) -join ', '))
+        return $false
+    }
+    return $true
 }
 
 function Show-DevModeHint {
@@ -801,7 +860,7 @@ function Get-PazStatusReport {
     if (-not (Ensure-Python)) { return $null }
     try {
         $json = & $Script:PythonExe $Script:PazStatusTool --paz $PazFolder --json 2>$null
-        if (-not $json) { return $null }
+        if ($LASTEXITCODE -ne 0 -or -not $json) { return $null }
         return ($json | ConvertFrom-Json)
     } catch {
         return $null
@@ -1123,8 +1182,7 @@ function Apply-CensorshipPack {
     if ($tier -eq 'expanded') {
         Write-Warn 'Expanded scans full meta (can take a minute)...'
     }
-    & $Script:PythonExe @pyArgs
-    $ok = -not ($LASTEXITCODE -and $LASTEXITCODE -ne 0)
+    $ok = Invoke-BdoPythonChecked -Arguments $pyArgs -Label 'Censorship pack'
     if ($ok) { Write-Ok 'Censorship pack ready. Meta Inject after Midnight.'; Ensure-ToolsInPaz } else { Write-Err "Exit $LASTEXITCODE" }
     if (-not $NoPrompt) { Pause-Any }
     return $ok
@@ -1356,10 +1414,7 @@ function Apply-SlotHidePatch {
     if ($cls) { $pyArgs += @('--classes', $cls) }
     $ok = $false
     try {
-        & $Script:PythonExe @pyArgs
-        if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-            Write-Err ("Exit code " + $LASTEXITCODE)
-        } else {
+        if (Invoke-BdoPythonChecked -Arguments $pyArgs -Label 'Slot hide patcher') {
             Write-Ok 'Slot hide folders written under files_to_patch\_slot_hide_*'
             Ensure-ToolsInPaz
             $ok = $true
@@ -1665,16 +1720,25 @@ function Apply-PubicHair {
 function Remove-StalePubicPackages {
     $ftp = Join-Path $Script:Config.pazFolder 'files_to_patch'
     if (-not (Test-Path -LiteralPath $ftp)) { return }
+    $resolvedStage = [IO.Path]::GetFullPath($ftp).TrimEnd('\')
+    $archiveRoot = $null
     $stale = @(Get-ChildItem -LiteralPath $ftp -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -like '_pubic_hair_*' -and $_.Name -ne '_pubic_hair_perclass' })
     foreach ($dir in $stale) {
         try {
-            Remove-Item -LiteralPath $dir.FullName -Recurse -Force -Confirm:$false
-            Write-Info ("Removed stale pubic package: " + $dir.Name)
+            $target = [IO.Path]::GetFullPath($dir.FullName)
+            if ([IO.Path]::GetDirectoryName($target) -ne $resolvedStage) { throw 'Stale package is outside the staging folder.' }
+            if (-not $archiveRoot) {
+                $archiveRoot = Join-Path ([string]$Script:Config.pazFolder) ('BDO_AIO_STAGE_BACKUPS\stale-pubic-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+                $null = New-Item -ItemType Directory -Path $archiveRoot -Force
+            }
+            Move-Item -LiteralPath $target -Destination (Join-Path $archiveRoot $dir.Name) -ErrorAction Stop
+            Write-Info ("Archived stale pubic package: " + $dir.Name)
         } catch {
-            Write-Warn ("Could not remove " + $dir.Name + ": " + $_.Exception.Message)
+            Write-Warn ("Could not archive " + $dir.Name + ": " + $_.Exception.Message)
         }
     }
+    if ($archiveRoot) { Write-Info ("Stale pubic packages retained at: " + $archiveRoot) }
 }
 
 function Configure-MidnightChoices {
@@ -1989,11 +2053,14 @@ function Ensure-ToolsInPaz {
 function Test-BdoToolkitInstalled {
     $gac = Join-Path $env:windir 'Microsoft.NET\assembly\GAC_MSIL\BDOToolkit\v4.0_1.3.0.0__e09839e68adb5566\BDOToolkit.dll'
     if (Test-Path -LiteralPath $gac) { return $true }
+    if (-not $Script:Config.pazFolder) { return $false }
     $local = Join-Path ([string]$Script:Config.pazFolder) 'BDOToolkit.dll'
     return (Test-Path -LiteralPath $local)
 }
 
 function Deploy-Midnight {
+    param([switch]$NoPrompt)
+    if (-not (Test-BdoToolsIdle)) { Pause-Any; return $false }
     Write-Banner
     Write-Host '  Step 1 - Deploy mods to files_to_patch' -ForegroundColor White
     Write-Host '  --------------------------------------' -ForegroundColor DarkGray
@@ -2027,7 +2094,7 @@ function Deploy-Midnight {
     Write-Info ("Target   : " + $Script:Config.pazFolder)
     Write-Info ("Args     : -g " + $g + " -a " + $a + " " + $xyzwArg + " --yes")
     Write-Host ''
-    if (-not (Read-YesNo 'Deploy now?' $true)) {
+    if (-not $NoPrompt -and -not (Read-YesNo 'Deploy now?' $true)) {
         Write-Warn 'Cancelled.'
         Pause-Any
         return $false
@@ -2045,9 +2112,7 @@ function Deploy-Midnight {
     Write-Host ''
     Write-Info 'Running Midnight deploy (first run can take a while)...'
     try {
-        & $Script:PythonExe @pyArgs
-        if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-            Write-Err ("Python exited with code " + $LASTEXITCODE)
+        if (-not (Invoke-BdoPythonChecked -Arguments $pyArgs -Label 'Midnight deploy')) {
             Pause-Any
             return $false
         }
@@ -2062,6 +2127,7 @@ function Deploy-Midnight {
         Write-Ok ("Deployed. Folder ready: " + $ftp)
     } else {
         Write-Warn 'files_to_patch not found after deploy - check console output above.'
+        return $false
     }
 
     Ensure-ToolsInPaz
@@ -2072,28 +2138,29 @@ function Deploy-Midnight {
 
 function Run-PartCutGen {
     Write-Banner
-    Write-Host '  Step 2 - PartCutGen (REQUIRED since ~2024)' -ForegroundColor White
-    Write-Host '  ------------------------------------------' -ForegroundColor DarkGray
-    Write-Info 'Rebuilds part-cut exclusion so body/armor clipping is correct.'
-    Write-Info 'Follow the on-screen instructions in the tool window.'
-    Write-Host ''
-
-    if (-not (Test-IsPazFolder $Script:Config.pazFolder)) {
-        Write-Err 'Set PAZ folder first.'
-        Pause-Any
-        return
-    }
+    Write-Host '  PartCutGen - rebuild part-cut exclusions' -ForegroundColor White
+    if (-not (Test-IsPazFolder $Script:Config.pazFolder)) { Write-Err 'Set PAZ first.'; Pause-Any; return $false }
+    if (-not (Test-BdoToolsIdle)) { Pause-Any; return $false }
     Ensure-ToolsInPaz
     $exe = Join-Path $Script:Config.pazFolder 'PartCutGen.exe'
-    if (-not (Test-Path -LiteralPath $exe)) {
-        Write-Err ("Missing: " + $exe)
-        Pause-Any
-        return
-    }
-    Write-Info ("Launching: " + $exe)
-    Start-Process -FilePath $exe -WorkingDirectory $Script:Config.pazFolder
-    Write-Ok 'PartCutGen launched. Finish it, then run Meta Injector (menu 5).'
+    if (-not (Test-Path -LiteralPath $exe)) { Write-Err ("Missing: " + $exe); Pause-Any; return $false }
+    Write-Info 'Follow the prompts in PartCutGen. This step waits for it to finish.'
+    $ok = $false
+    try {
+        # PartCutGen requires a real console; redirected input/output breaks it.
+        $process = Start-Process -FilePath $exe -WorkingDirectory $Script:Config.pazFolder -PassThru -Wait
+        try {
+            if ($process.ExitCode -ne 0) { throw ("PartCutGen exited with code " + $process.ExitCode + '. Do not inject.') }
+        } finally { $process.Dispose() }
+        $output = Join-Path $Script:Config.pazFolder 'files_to_patch\_PartCutGen\character\partcutdesc.xml'
+        if (-not (Test-Path -LiteralPath $output -PathType Leaf)) { throw 'PartCutGen produced no partcutdesc.xml. Do not inject.' }
+        # Exit zero alone cannot distinguish generation from choosing Quit.
+        $ok = Read-YesNo 'Did PartCutGen report successful generation (no error)?' $false
+        if ($ok) { Write-Ok 'PartCutGen finished; you can proceed to injection.' }
+        else { Write-Warn 'Apply stopped before injection. Check the PartCutGen output.' }
+    } catch { Write-Err $_.Exception.Message }
     Pause-Any
+    return $ok
 }
 
 function Get-FreeBdoDriveLetter {
@@ -2148,228 +2215,148 @@ function Prepare-BdoInjectStage {
 
 function Run-MetaInjector {
     Write-Banner
-    Write-Host '  Step 3 - Meta Injector (applies the patch)' -ForegroundColor White
-    Write-Host '  ------------------------------------------' -ForegroundColor DarkGray
-    Write-Info 'Patches the game meta so files_to_patch are used in-game.'
-    Write-Warn 'Close the BDO client and launcher before injecting.'
-    Write-Host ''
-
-    if (-not (Test-IsPazFolder $Script:Config.pazFolder)) {
-        Write-Err 'Set PAZ folder first.'
-        Pause-Any
-        return
-    }
-    if (-not (Ensure-Python)) {
-        Pause-Any
-        return
-    }
+    Write-Host '  Meta Injector - apply and verify' -ForegroundColor White
+    if (-not (Test-IsPazFolder $Script:Config.pazFolder)) { Write-Err 'Set a valid PAZ folder first.'; Pause-Any; return $false }
+    if (-not (Test-BdoToolsIdle)) { Pause-Any; return $false }
+    if (-not (Ensure-Python)) { Pause-Any; return $false }
     Ensure-ToolsInPaz
     $paz = [string]$Script:Config.pazFolder
     $source = Join-Path $paz 'files_to_patch'
     $exe = Join-Path $paz 'Meta Injector.exe'
-    if (-not (Test-Path -LiteralPath $exe)) {
-        Write-Err ("Missing: " + $exe)
-        Pause-Any
-        return
-    }
+    if (-not (Test-Path -LiteralPath $exe)) { Write-Err ("Missing: " + $exe); Pause-Any; return $false }
     if (-not (Test-BdoToolkitInstalled)) {
-        Write-Err 'Meta Injector 1.4.1 requires BDO Toolkit 1.3.0, but it was not found.'
-        Write-Info 'Install the official BDO Toolkit package, then run this step again.'
-        Write-Host '  https://www.undertow.club/downloads/meta-injector.4367/' -ForegroundColor Cyan
+        Write-Err 'Meta Injector requires BDO Toolkit. Install it before applying.'
         Pause-Any
-        return
+        return $false
     }
-    if (-not (Test-Path -LiteralPath $source)) {
-        Write-Err ("Missing: " + $source)
-        Pause-Any
-        return
-    }
+    if (-not (Test-Path -LiteralPath $source)) { Write-Err ("Missing: " + $source); Pause-Any; return $false }
 
-    $existingStatus = Get-PazStatusReport -PazFolder $paz
-    if ($existingStatus -and [string]$existingStatus.meta.state -eq 'MODDED') {
-        Write-Warn 'The current pad00000.meta is already MODDED.'
-        Write-Info 'Running Meta Injector again can append another PAZ set and repeat the long archive-save step.'
-        if (-not (Read-YesNo 'Run Meta Injector again anyway?' $false)) {
-            Write-Info 'Cancelled before backup, stage building, or external injection.'
-            Pause-Any
-            return
-        }
-    }
-
+    # A modified meta cannot tell us whether the user's choices changed.
+    # Do not block reinjection or silently reuse a stage on that signal alone.
     $runId = [guid]::NewGuid().ToString('N')
-    $runStarted = [DateTime]::UtcNow
     $reportDir = Join-Path $Script:Root 'logs'
     $reportPath = Join-Path $reportDir ('meta-inject-' + $runId + '.json')
+    $Script:LastMetaInjectReportPath = $reportPath
     $stageReportPath = Join-Path $reportDir ('meta-inject-' + $runId + '-stage.json')
     $report = [ordered]@{
-        schema = 1
-        launcherVersion = [string]$Script:Version
-        runId = $runId
-        action = 'meta-inject'
-        state = 'started'
-        startedAt = $runStarted.ToString('o')
-        finishedAt = $null
-        reportPath = $reportPath
-        targetPaz = $paz
-        source = $source
-        stagePath = $null
-        stageReportPath = $stageReportPath
-        clientVersionBefore = $null
-        clientVersionAfter = $null
-        backupStartedAt = $null
-        backupFinishedAt = $null
-        stageStartedAt = $null
-        stageFinishedAt = $null
-        injectorStartedAt = $null
-        injectorFinishedAt = $null
-        verifyStartedAt = $null
-        verifyFinishedAt = $null
-        backupMs = $null
-        stageBuildMs = $null
-        injectorMs = $null
-        verifyMs = $null
-        injectorExitCode = $null
-        verifyPassed = $null
-        error = $null
+        schema = 1; launcherVersion = [string]$Script:Version
+        runId = $runId; action = 'meta-inject'; state = 'started'
+        startedAt = [DateTime]::UtcNow.ToString('o'); finishedAt = $null
+        reportPath = $reportPath; targetPaz = $paz; source = $source
+        stagePath = $null; stageReportPath = $stageReportPath
+        clientVersionBefore = $null; clientVersionAfter = $null
+        backupStartedAt = $null; backupFinishedAt = $null
+        stageStartedAt = $null; stageFinishedAt = $null
+        injectorStartedAt = $null; injectorFinishedAt = $null
+        verifyStartedAt = $null; verifyFinishedAt = $null
+        backupMs = $null; stageBuildMs = $null; injectorMs = $null; verifyMs = $null
+        injectorExitCode = $null; verifyPassed = $null; error = $null
     }
-    Write-Info ('Run ID: ' + $runId)
     Write-Info ('Run report: ' + $reportPath)
-    Write-MetaInjectReport -Report $report -Path $reportPath
-
-    # Snapshot a pristine meta before the very first inject. Once injected, the
-    # only pre-inject copy left is Meta Injector's own backup, and losing it means
-    # a full Steam/launcher repair.
-    Write-Host ''
-    Write-Info 'Checking for a vanilla meta backup...'
-    $backupStarted = [DateTime]::UtcNow
-    $report['backupStartedAt'] = $backupStarted.ToString('o')
-    if (-not (Invoke-VanillaRestoreTool @('backup'))) {
-        $backupFinished = [DateTime]::UtcNow
-        $report['state'] = 'backup-failed'
-        $report['backupFinishedAt'] = $backupFinished.ToString('o')
-        $report['backupMs'] = [int][math]::Round(($backupFinished - $backupStarted).TotalMilliseconds)
-        $report['error'] = 'A current-version vanilla meta snapshot is required before injection.'
-        $report['finishedAt'] = [DateTime]::UtcNow.ToString('o')
-        Write-MetaInjectReport -Report $report -Path $reportPath
-        Write-Err 'A current-version vanilla meta snapshot is required before injection.'
-        Write-Warn 'Injection was aborted; refresh the snapshot after the launcher finishes patching.'
-        Pause-Any
-        return
-    }
-
-    # The meta header carries the client version the launcher checks. Record it
-    # BEFORE injecting: if the injector writes an older number back, the launcher
-    # decides the client rolled back and re-downloads the meta, wiping every mod.
-    # Measured 2026-08-27: 3418 -> 3412 triggered a 1 GB re-patch.
-    $metaVersionBefore = Get-BdoMetaVersion -PazFolder $paz
-    $backupFinished = [DateTime]::UtcNow
-    $report['clientVersionBefore'] = $metaVersionBefore
-    $report['backupFinishedAt'] = $backupFinished.ToString('o')
-    $report['backupMs'] = [int][math]::Round(($backupFinished - $backupStarted).TotalMilliseconds)
-    Write-MetaInjectReport -Report $report -Path $reportPath
-    if ($metaVersionBefore) { Write-Info ("Client version before inject: " + $metaVersionBefore) }
-
-    Write-Host ''
-    Write-Host '  If the game breaks, menu [R] -> [1] restores vanilla without Steam.' -ForegroundColor Yellow
-    Write-Host '  The AIO passes a canonical short-path stage; no XYZW collection is deleted.' -ForegroundColor Green
-    Write-Host ''
     $pazDrive = $null
     $sourceDrive = $null
-    $stage = $null
+    $process = $null
+    $passed = $false
     try {
+        $timer = [Diagnostics.Stopwatch]::StartNew()
+        $report['state'] = 'backup'
+        $report['backupStartedAt'] = [DateTime]::UtcNow.ToString('o')
+        Write-MetaInjectReport -Report $report -Path $reportPath
+        $backupPassed = Invoke-VanillaRestoreTool @('backup')
+        $report['backupFinishedAt'] = [DateTime]::UtcNow.ToString('o')
+        $report['backupMs'] = $timer.ElapsedMilliseconds
+        if (-not $backupPassed) {
+            $report['state'] = 'backup-failed'
+            throw 'No current-version vanilla snapshot is available. Injection was not started.'
+        }
+        $metaVersionBefore = Get-BdoMetaVersion -PazFolder $paz
+        if (-not $metaVersionBefore) { throw 'Cannot read the current client version. Injection was not started.' }
+        $report['clientVersionBefore'] = $metaVersionBefore
+        Write-Info ("Client version before inject: " + $metaVersionBefore)
         $pazDrive = Mount-BdoTemporaryDrive -Target $paz
         $sourceDrive = Mount-BdoTemporaryDrive -Target $source
-        $stageStarted = [DateTime]::UtcNow
-        $report['stageStartedAt'] = $stageStarted.ToString('o')
-        $stage = [string](Prepare-BdoInjectStage -PazDrive $pazDrive -SourceDrive $sourceDrive -ReportPath $stageReportPath)
-        $stageFinished = [DateTime]::UtcNow
-        $report['stagePath'] = $stage
-        $report['stageFinishedAt'] = $stageFinished.ToString('o')
-        $report['stageBuildMs'] = [int][math]::Round(($stageFinished - $stageStarted).TotalMilliseconds)
-        $report['state'] = 'stage-ready'
+        $timer.Restart()
+        $report['state'] = 'staging'
+        $report['stageStartedAt'] = [DateTime]::UtcNow.ToString('o')
         Write-MetaInjectReport -Report $report -Path $reportPath
+        $stage = [string](Prepare-BdoInjectStage -PazDrive $pazDrive -SourceDrive $sourceDrive -ReportPath $stageReportPath)
+        $report['stagePath'] = $stage
+        $report['stageFinishedAt'] = [DateTime]::UtcNow.ToString('o')
+        $report['stageBuildMs'] = $timer.ElapsedMilliseconds
         $shortExe = $pazDrive + '\Meta Injector.exe'
-        Write-Info ("Launching through short path: " + $shortExe)
-        $injectStarted = [DateTime]::UtcNow
-        $report['injectorStartedAt'] = $injectStarted.ToString('o')
-        $process = Start-Process -FilePath $shortExe -WorkingDirectory ($pazDrive + '\') `
-            -ArgumentList ('-files "{0}"' -f $stage) -PassThru
-        $injectHeartbeat = [Diagnostics.Stopwatch]::StartNew()
+        Write-Info 'Opening Meta Injector. Follow its prompts; archive saving can take time.'
+        $timer.Restart()
+        $report['state'] = 'injecting'
+        $report['injectorStartedAt'] = [DateTime]::UtcNow.ToString('o')
+        Write-MetaInjectReport -Report $report -Path $reportPath
+        $process = Start-Process -FilePath $shortExe -WorkingDirectory ($pazDrive + '\') -ArgumentList ('-files "{0}"' -f $stage) -PassThru
         while (-not $process.WaitForExit(5000)) {
-            Write-Info ("Meta Injector still saving PAZ archives... {0}s elapsed" -f [int]$injectHeartbeat.Elapsed.TotalSeconds)
+            Write-Info ("Meta Injector is running: {0}s elapsed. Check its window for prompts." -f [int]$timer.Elapsed.TotalSeconds)
         }
-        $injectHeartbeat.Stop()
-        $injectFinished = [DateTime]::UtcNow
-        $report['injectorFinishedAt'] = $injectFinished.ToString('o')
-        $report['injectorMs'] = [int][math]::Round(($injectFinished - $injectStarted).TotalMilliseconds)
+        $process.WaitForExit()
+        $report['injectorFinishedAt'] = [DateTime]::UtcNow.ToString('o')
+        $report['injectorMs'] = $timer.ElapsedMilliseconds
         $report['injectorExitCode'] = [int]$process.ExitCode
         $report['clientVersionAfter'] = Get-BdoMetaVersion -PazFolder $paz
-        $report['state'] = 'injector-finished'
-        Write-MetaInjectReport -Report $report -Path $reportPath
-        Write-Ok ("Meta Injector closed (process exit code " + $process.ExitCode + "; elapsed " + ([math]::Round($report['injectorMs'] / 1000, 1)) + "s).")
-        # A meta that points past the end of an archive is exactly what the client
-        # reports as corrupted data. Prove it resolves before the game is launched.
-        if ($metaVersionBefore) {
-            $Script:Config.lastMetaVersion = $metaVersionBefore
-            Save-Config
+        if ($process.ExitCode -ne 0) {
+            $report['state'] = 'injector-failed'
+            throw ("Meta Injector exited with code " + $process.ExitCode + '. Verify or restore the game before continuing.')
         }
-        Write-Info 'Verifying the injected meta before you launch...'
-        $verifyArgs = @('verify')
-        if ($metaVersionBefore) { $verifyArgs += @('--expect-version', [string]$metaVersionBefore) }
-        $verifyStarted = [DateTime]::UtcNow
-        $report['verifyStartedAt'] = $verifyStarted.ToString('o')
-        $verifyPassed = Invoke-VanillaRestoreTool $verifyArgs
-        $verifyFinished = [DateTime]::UtcNow
-        $report['verifyFinishedAt'] = $verifyFinished.ToString('o')
-        $report['verifyMs'] = [int][math]::Round(($verifyFinished - $verifyStarted).TotalMilliseconds)
-        $report['verifyPassed'] = [bool]$verifyPassed
-        $report['state'] = if ($verifyPassed) { 'verified' } else { 'verify-failed' }
+        $timer.Restart()
+        $report['state'] = 'verifying'
+        $report['verifyStartedAt'] = [DateTime]::UtcNow.ToString('o')
         Write-MetaInjectReport -Report $report -Path $reportPath
+        $verifyPassed = Invoke-VanillaRestoreTool @('verify', '--expect-version', [string]$metaVersionBefore)
+        $report['verifyFinishedAt'] = [DateTime]::UtcNow.ToString('o')
+        $report['verifyMs'] = $timer.ElapsedMilliseconds
+        $report['verifyPassed'] = $verifyPassed
         if (-not $verifyPassed) {
-            Write-Host ''
-            Write-Err 'THE INJECTED META DID NOT VERIFY. DO NOT LAUNCH THE GAME.'
-            Write-Warn 'Launching now would make the launcher re-patch and wipe the injection.'
-            Write-Host '  Fix: [R] -> restore vanilla, then re-run PartCutGen + Meta Injector.' -ForegroundColor Cyan
-            Write-Host ''
+            $report['state'] = 'verify-failed'
+            throw 'The injected meta did not verify. Do not launch the game. Use Recovery to inspect or restore it.'
         }
+        $Script:Config.lastMetaVersion = $metaVersionBefore
+        Save-Config
         $region = Get-BdoClientRegion
         $metaPatcher = $pazDrive + '\Meta Patcher.exe'
         if ($region -in @('NA', 'EU')) {
-            Write-Ok ("Meta Patcher skipped: the author's FAQ excludes NA/EU; detected " + $region + '.')
+            Write-Info ("Meta Patcher is not required for " + $region + '.')
         } elseif ($region) {
-            Write-Warn ("Client region detected: " + $region + '. The Meta Patcher FAQ says official regions other than NA/EU require it.')
+            Write-Warn ("Region " + $region + ': check the Meta Patcher requirements.')
             if (Test-Path -LiteralPath $metaPatcher) {
                 if (Read-YesNo 'Run Meta Patcher now?' $true) {
-                    $patcherProcess = Start-Process -FilePath $metaPatcher `
-                        -WorkingDirectory ($pazDrive + '\') -PassThru -Wait
-                    Write-Ok ("Meta Patcher closed (process exit code " + $patcherProcess.ExitCode + ").")
+                    $patcherProcess = Start-Process -FilePath $metaPatcher -WorkingDirectory ($pazDrive + '\') -PassThru -Wait
+                    try {
+                        if ($patcherProcess.ExitCode -ne 0) { throw ("Meta Patcher exited with code " + $patcherProcess.ExitCode) }
+                    } finally { $patcherProcess.Dispose() }
+                    # The patcher also writes the meta, invalidating the earlier check.
+                    $report['verifyPassed'] = Invoke-VanillaRestoreTool @('verify', '--expect-version', [string]$metaVersionBefore)
+                    if (-not $report['verifyPassed']) { $report['state'] = 'verify-failed'; throw 'Meta verification failed after Meta Patcher.' }
                 }
-            } else {
-                Write-Warn 'Meta Patcher 1.1.0 is not installed.'
-                Write-Host '  Official page: https://www.undertow.club/downloads/meta-patcher.7829/' -ForegroundColor Cyan
-            }
-        } else {
-            Write-Warn 'Could not detect the client region from service.ini; Meta Patcher was not run automatically.'
-            Write-Host '  Check the author FAQ before using it: https://www.undertow.club/downloads/meta-patcher.7829/field?field=FAQ' -ForegroundColor Cyan
-        }
-        if ($verifyPassed) { $report['state'] = 'completed' }
+            } else { Write-Warn 'Meta Patcher is not installed; confirm your regional requirements before launching.' }
+        } else { Write-Warn 'Region is unknown. Meta Patcher was not run.' }
+        $report['state'] = 'completed'
+        $passed = $true
+        Write-Ok 'Injector exited successfully; client version and archive references verified.'
+        Write-Info 'This does not verify the appearance of mods in game.'
     } catch {
-        $report['state'] = 'error'
+        if ($report['state'] -notlike '*-failed') { $report['state'] = 'error' }
         $report['error'] = $_.Exception.Message
-        Write-MetaInjectReport -Report $report -Path $reportPath
         Write-Err $_.Exception.Message
-        Write-Warn 'No files were deleted. Fix the reported input and run Meta Injector again.'
+        if ($report['injectorStartedAt']) { Write-Warn 'The external tool may have changed game files. Read the report before retrying.' }
     } finally {
+        if ($process) { $process.Dispose() }
         Dismount-BdoTemporaryDrive -Drive $sourceDrive
         Dismount-BdoTemporaryDrive -Drive $pazDrive
         $report['finishedAt'] = [DateTime]::UtcNow.ToString('o')
         Write-MetaInjectReport -Report $report -Path $reportPath
     }
     Pause-Any
+    return $passed
 }
 
 function Apply-AllRestoredChoices {
     param([switch]$NoPrompt)
+    if (-not (Test-BdoToolsIdle)) { if (-not $NoPrompt) { Pause-Any }; return $false }
     Write-Banner
     Write-Host '  APPLY ALL RESTORED CHOICES' -ForegroundColor Green
     Write-Host '  ==========================' -ForegroundColor DarkGray
@@ -2400,6 +2387,9 @@ function Apply-AllRestoredChoices {
     $paz = [string]$Script:Config.pazFolder
     $ftp = Join-Path $paz 'files_to_patch'
     if (-not (Test-Path $ftp)) { New-Item -ItemType Directory -Path $ftp -Force | Out-Null }
+    # Rebuild the complete selected set: otherwise disabled options remain staged.
+    # Keep previous generated packages outside the injector's input for recovery.
+    [void](Clear-AioGenerated -Archive)
     $allOk = $true
 
     # 1) Body size — same single --parts argument as Apply-BodySizePatch
@@ -2407,7 +2397,8 @@ function Apply-AllRestoredChoices {
         Write-Info '--- Body size limits ---'
         $parts = Get-BodySizeArg
         if (-not $parts) {
-            Write-Warn 'Body size config unusable — skipping body size.'
+            Write-Err 'Body size config is unusable.'
+            $allOk = $false
         } else {
             Write-Info ("Applies : " + (Format-BodySizeSpec (Get-BodySizeSpec)))
             $out = Join-Path $ftp '_body_size_limits'
@@ -2482,6 +2473,7 @@ function Apply-AllRestoredChoices {
         if (-not (Invoke-BdoPythonChecked -Arguments $pyArgs -Label 'Genital patcher')) { $allOk = $false }
     } elseif ($f3d -or ($maleMode -and $maleMode -ne 'none')) {
         Write-Warn "Genital pack missing: $Script:GenitalRoot"
+        $allOk = $false
     }
 
     # The old "new females EXPERIMENTAL genitals" pass is gone: it copied a donor
@@ -2581,10 +2573,15 @@ function Show-HeishaRegenHelper {
 }
 
 # Remove only AIO-generated packages; user-created folders and the Midnight
-# deploy are left alone.
+# deploy are left alone. Archive is the default; deletion requires an explicit
+# -Delete switch so a future caller cannot regress the recoverable behavior.
 function Clear-AioGenerated {
+    param([switch]$Archive, [switch]$Delete)
+    if (-not $Archive -and -not $Delete) { $Archive = $true }
     $ftp = Join-Path ([string]$Script:Config.pazFolder) 'files_to_patch'
     if (-not (Test-Path -LiteralPath $ftp)) { Write-Warn 'No files_to_patch.'; return 0 }
+    $resolvedStage = [IO.Path]::GetFullPath($ftp).TrimEnd('\')
+    $archiveRoot = Join-Path ([string]$Script:Config.pazFolder) ('BDO_AIO_STAGE_BACKUPS\' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
     $n = 0
     Get-ChildItem -LiteralPath $ftp -Directory -ErrorAction SilentlyContinue | ForEach-Object {
         $name = $_.Name
@@ -2593,11 +2590,19 @@ function Clear-AioGenerated {
             if ($name -eq $p.TrimEnd('_') -or $name.StartsWith($p)) { $hit = $true; break }
         }
         if ($hit) {
-            Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
-            Write-Host ("  removed: files_to_patch\" + $name) -ForegroundColor DarkGray
+            $target = [IO.Path]::GetFullPath($_.FullName)
+            if ([IO.Path]::GetDirectoryName($target) -ne $resolvedStage) { throw 'Generated package is outside the staging folder.' }
+            if ($Archive -and -not $Delete) {
+                $null = New-Item -ItemType Directory -Path $archiveRoot -Force
+                Move-Item -LiteralPath $target -Destination (Join-Path $archiveRoot $name) -ErrorAction Stop
+            } else {
+                Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction Stop
+                Write-Host ("  removed: files_to_patch\" + $name) -ForegroundColor DarkGray
+            }
             $n++
         }
     }
+    if ($Archive -and $n) { Write-Info ("Previous generated packages retained at: " + $archiveRoot) }
     return $n
 }
 
@@ -2648,17 +2653,20 @@ function Write-BodySizeRestoreSafetyNotice {
 }
 
 function Backup-BdoCustomizationPresets {
+    param([switch]$Required, [string]$CustomizationPath)
     # Copy-only snapshot. Never deletes live presets. Used before vanilla restore.
-    $custom = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Black Desert\Customization'
+    $custom = if ($CustomizationPath) { $CustomizationPath } else { Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Black Desert\Customization' }
     if (-not (Test-Path -LiteralPath $custom)) {
         Write-Warn 'No Documents\Black Desert\Customization folder — nothing to snapshot.'
         Write-Warn 'If you use Beauty Album presets, save them in-game while STILL modded next time.'
         return $null
     }
-    $dest = Join-Path $Script:Root ('backup\Customization-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+    $dest = Join-Path $Script:Root ('backup\Customization-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0,8))
     try {
         New-Item -ItemType Directory -Path $dest -Force | Out-Null
-        Copy-Item -Path (Join-Path $custom '*') -Destination $dest -Recurse -Force -ErrorAction Stop
+        Get-ChildItem -LiteralPath $custom -Force -ErrorAction Stop | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $dest -Recurse -Force -ErrorAction Stop
+        }
         Write-Ok ('Saved Beauty Album / Customization presets to:')
         Write-Host ("    " + $dest) -ForegroundColor Cyan
         Write-Host '  These files are only useful if the character was NOT already clamped.' -ForegroundColor DarkGray
@@ -2666,6 +2674,7 @@ function Backup-BdoCustomizationPresets {
         Write-Host '  Documents\Black Desert\Customization\ then load the preset in-game.' -ForegroundColor DarkGray
         return $dest
     } catch {
+        if ($Required) { throw ('Preset backup failed; recovery was not started. ' + $_.Exception.Message) }
         Write-Warn ('Could not back up character presets: ' + $_.Exception.Message)
         return $null
     }
@@ -2678,7 +2687,7 @@ function Invoke-VanillaRestoreTool {
 
     $isRestore = $false
     foreach ($a in @($ToolArgs)) {
-        if ([string]$a -eq 'restore') { $isRestore = $true; break }
+        if ([string]$a -eq 'restore' -and '--apply' -in $ToolArgs) { $isRestore = $true; break }
     }
 
     # Character / preset risk only applies when actually restoring game files.
@@ -2693,7 +2702,7 @@ function Invoke-VanillaRestoreTool {
         }
         Write-Host ''
         Write-Host '  Snapshotting Beauty Album / Customization presets (copy-only)...' -ForegroundColor Yellow
-        [void](Backup-BdoCustomizationPresets)
+        [void](Backup-BdoCustomizationPresets -Required)
         Write-Host ''
     }
 
@@ -2704,17 +2713,31 @@ function Invoke-VanillaRestoreTool {
         return $false
     }
     $pyArgs = @($tool) + $ToolArgs + @('--paz', [string]$Script:Config.pazFolder)
-    try {
-        & $Script:PythonExe @pyArgs
-    } catch {
-        Write-Err $_.Exception.Message
-        return $false
-    }
-    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-        Write-Err ("vanilla_restore exit " + $LASTEXITCODE)
-        return $false
-    }
-    return $true
+    return (Invoke-BdoPythonChecked -Arguments $pyArgs -Label 'Vanilla restore tool')
+}
+
+function Invoke-RecoveryJson {
+    param([string[]]$Arguments)
+    if (-not (Test-IsPazFolder $Script:Config.pazFolder)) { throw 'Set and save the game PAZ folder first.' }
+    if (-not (Ensure-Python -ProbeOnly)) { throw 'Choose a Python 3 interpreter in Overview first.' }
+    $tool = Join-Path $Script:Root 'tools\bdo_meta\vanilla_restore.py'
+    $output = & $Script:PythonExe -B $tool @Arguments --paz ([string]$Script:Config.pazFolder) | Out-String
+    $code = $LASTEXITCODE
+    try { $data = $output | ConvertFrom-Json } catch { throw ('Recovery returned no readable result. ' + $output) }
+    if ($code -ne 0) { throw $(if ($data.PSObject.Properties['error']) { $data.error } else { 'Recovery check failed.' }) }
+    return $data
+}
+
+function Invoke-NativeRecovery {
+    param([ValidateSet('restore','snapshot','cleanup')][string]$Operation, [string]$Token, [switch]$Confirmed)
+    if (-not $Confirmed -or $Token -notmatch '^[0-9a-f]{64}$') { throw 'Preview and explicitly confirm recovery first.' }
+    if (-not (Test-BdoToolsIdle)) { throw 'Close the game, launcher and patch tools before recovery.' }
+    $presetBackup = $null
+    if ($Operation -eq 'restore') { $presetBackup = Backup-BdoCustomizationPresets -Required }
+    $result = Invoke-RecoveryJson @('recover', '--operation', $Operation, '--preview-token', $Token, '--confirmed')
+    if ($result.state -ne 'completed') { throw 'Recovery did not report completion.' }
+    $result | Add-Member -NotePropertyName presetBackup -NotePropertyValue $presetBackup -Force
+    return $result
 }
 
 function Restore-UneditedGameFiles {
@@ -2793,15 +2816,15 @@ function Restore-UneditedGameFiles {
             Pause-Any
             return
         }
-        $keepPaz = -not (Read-YesNo 'Also delete the injected PAZ files (frees the space)?' $true)
+        $keepPaz = -not (Read-YesNo 'Also delete the injected PAZ files (frees the space)?' $false)
         $restoreArgs = @('restore', '--apply')
         if ($keepPaz) { $restoreArgs += '--keep-paz' }
         if (Invoke-VanillaRestoreTool $restoreArgs) {
             Write-Host ''
             Write-Ok 'Game restored to vanilla.'
-            if (Read-YesNo 'Also clear AIO-generated files_to_patch folders?' $true) {
-                $n = Clear-AioGenerated
-                Write-Ok ("Cleared $n AIO folder(s).")
+            if (Read-YesNo 'Also archive AIO-generated files_to_patch folders?' $false) {
+                $n = Clear-AioGenerated -Archive
+                Write-Ok ("Archived $n AIO folder(s).")
             }
             Write-Host ''
             Write-Host '  NEXT STEPS (order matters — do not skip)' -ForegroundColor Yellow
@@ -2825,15 +2848,15 @@ function Restore-UneditedGameFiles {
 
     if ($c -eq '2') {
         Write-Host ''
-        Write-Host '    [A] AIO-generated folders only  (recommended)' -ForegroundColor Green
+        Write-Host '    [A] Archive AIO-generated folders only  (recommended)' -ForegroundColor Green
         Write-Host '        _body_size, _slot_hide_*, _pubic_*, _censorship_*, _genital_*' -ForegroundColor DarkGray
         Write-Host '        Keeps the Midnight deploy, so you only re-apply AIO options.' -ForegroundColor DarkGray
         Write-Host '    [E] EVERYTHING, including the Midnight deploy' -ForegroundColor Yellow
         Write-Host '        Full rebuild: you must re-deploy Midnight afterwards.' -ForegroundColor DarkGray
         $s = (Read-Host '  Select').Trim().ToUpperInvariant()
         if ($s -eq 'A') {
-            $n = Clear-AioGenerated
-            Write-Ok ("Cleared $n AIO folder(s).")
+            $n = Clear-AioGenerated -Archive
+            Write-Ok ("Archived $n AIO folder(s).")
             Write-Info 'Re-apply the options you want, then PartCutGen + Meta Injector.'
         } elseif ($s -eq 'E') {
             if (Read-YesNo 'DELETE the entire files_to_patch folder?' $false) {
@@ -2884,64 +2907,29 @@ function Restore-UneditedGameFiles {
 }
 
 function Run-FullWizard {
+    param([switch]$NoPrompt)
     Write-Banner
-    Write-Host '  Full easy install wizard' -ForegroundColor White
-    Write-Host '  ------------------------' -ForegroundColor DarkGray
-    Write-Info 'This walks through Midnight, optional RESTORED batch, PartCutGen, Meta Injector.'
-    Write-Host ''
-
+    Write-Host '  Apply saved choices' -ForegroundColor White
+    if (-not (Test-BdoToolsIdle)) { Pause-Any; return $false }
     $pack = Test-PackReady
     if (-not $pack.Ok) {
-        Write-Err 'Bundled pack is incomplete. This release zip may be damaged.'
-        foreach ($m in $pack.Missing) { Write-Warn ("  " + $m) }
+        Write-Err 'The full mod pack is missing or incomplete.'
+        foreach ($missing in $pack.Missing) { Write-Warn $missing }
         Pause-Any
-        return
+        return $false
     }
-
     if (-not (Test-IsPazFolder $Script:Config.pazFolder)) {
-        Write-Warn 'PAZ not set yet.'
-        if (Read-YesNo 'Set PAZ folder now?' $true) { Set-PazFolder }
-        if (-not (Test-IsPazFolder $Script:Config.pazFolder)) {
-            Write-Err 'Cannot continue without PAZ.'
-            Pause-Any
-            return
-        }
+        if (-not $NoPrompt) { Set-PazFolder }
+        if (-not (Test-IsPazFolder $Script:Config.pazFolder)) { Write-Err 'Set PAZ first.'; Pause-Any; return $false }
     }
-
-    Write-Host '  Your saved choices:' -ForegroundColor White
-    Write-Host ("    Gender = " + (Get-GenderLabel $Script:Config.gender)) -ForegroundColor Gray
-    Write-Host ("    Armor  = " + (Get-ArmorLabel $Script:Config.armor)) -ForegroundColor Gray
-    Write-Host ("    XYZW   = " + $Script:Config.xyzwCollections) -ForegroundColor Gray
-    if (Read-YesNo 'Change options (Midnight / RESTORED) before deploy?' $false) {
-        Configure-ModChoices
-    }
-
-    if (-not (Deploy-Midnight)) { return }
-
-    Write-Banner
-    Write-Host '  RESTORED batch (optional)' -ForegroundColor Green
-    if (Read-YesNo 'Apply all configured RESTORED choices now (body/slots/pubic/censorship/genitals)?' $true) {
-        [void](Apply-AllRestoredChoices -NoPrompt)
-    }
-
-    Write-Banner
-    Write-Host '  Next: PartCutGen' -ForegroundColor White
-    if (Read-YesNo 'Launch PartCutGen now?' $true) {
-        Run-PartCutGen
-    }
-
-    Write-Banner
-    Write-Host '  Next: Meta Injector' -ForegroundColor White
-    Write-Warn 'Game + launcher must be closed.'
-    if (Read-YesNo 'Launch Meta Injector now?' $true) {
-        Run-MetaInjector
-    }
-
-    Write-Host ''
-    Write-Ok 'Wizard finished.'
-    Write-Info 'After every official BDO patch: menu H (regen helper) then this wizard again.'
-    Write-Info 'To undo AIO changes: menu R (Restore / clean).'
+    if (-not $NoPrompt -and (Read-YesNo 'Change options before applying?' $false)) { Configure-ModChoices }
+    if (-not (Deploy-Midnight -NoPrompt:$NoPrompt)) { return $false }
+    if (-not (Apply-AllRestoredChoices -NoPrompt)) { Pause-Any; return $false }
+    if (-not (Run-PartCutGen)) { return $false }
+    if (-not (Run-MetaInjector)) { return $false }
+    Write-Ok 'Apply sequence completed and meta verified.'
     Pause-Any
+    return $true
 }
 
 function Open-FilesToPatch {
@@ -3057,15 +3045,20 @@ function Apply-GraphicsProfile {
         Write-Host '  Start DSR Smoothness around 50%' -ForegroundColor Yellow
     }
     Write-Host ''
-    if (-not (Read-YesNo 'Merge this profile now? (backs up the complete existing file)' $true)) {
+    if (-not (Read-YesNo 'Merge this profile now? (backs up the complete existing file)' $false)) {
         Write-Warn 'Cancelled.'
+        Pause-Any
+        return
+    }
+
+    if (-not (Test-BdoToolsIdle)) {
         Pause-Any
         return
     }
 
     try {
         $stamp = Get-Date -Format 'yyyyMMdd_HHmmss_fff'
-        $backup = Join-Path $bdoDocs ("GameOption.backup." + $stamp + ".txt")
+        $backup = Join-Path $bdoDocs ("GameOption.backup." + $stamp + "-" + [guid]::NewGuid().ToString('N').Substring(0,8) + ".txt")
         Copy-Item -LiteralPath $target -Destination $backup
         Write-Ok ("Backed up complete file -> " + [IO.Path]::GetFileName($backup))
 
@@ -3083,6 +3076,94 @@ function Apply-GraphicsProfile {
         Write-Err $_.Exception.Message
     }
     Pause-Any
+}
+
+function Resolve-GraphicsProfilePath {
+    param([string]$Profile)
+    if ([string]::IsNullOrWhiteSpace($Profile) -or -not $Script:GraphicsProfiles.Contains($Profile)) {
+        throw 'Choose one of the bundled graphics profiles.'
+    }
+    $path = Join-Path $Script:GraphicsDir $Profile
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        throw ('Graphics profile is missing: ' + $Profile)
+    }
+    return $path
+}
+
+function Get-GraphicsTargetPath {
+    return (Join-Path (Get-BdoDocumentsFolder) 'GameOption.txt')
+}
+
+function Get-GraphicsToken {
+    param([string]$Target, [string]$ProfilePath)
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    try {
+        $material = [Text.Encoding]::UTF8.GetBytes((Get-FileHash -LiteralPath $Target).Hash + '|' + (Get-FileHash -LiteralPath $ProfilePath).Hash + '|' + $Target)
+        return ([BitConverter]::ToString($hasher.ComputeHash($material))).Replace('-', '').ToLowerInvariant()
+    } finally { $hasher.Dispose() }
+}
+
+function Invoke-GraphicsJson {
+    param([string]$Profile, [switch]$Write)
+    $profilePath = Resolve-GraphicsProfilePath $Profile
+    $target = Get-GraphicsTargetPath
+    if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
+        throw ('GameOption.txt was not found at ' + $target + '. Start BDO once, close it, then preview again.')
+    }
+    if (-not (Ensure-Python -ProbeOnly)) { throw 'Choose a Python 3 interpreter in Overview first.' }
+    $args = @('-B', $Script:GameOptionTool, '--game-option', $target, '--profile', $profilePath)
+    if ($Write) { $args += @('--output', $target) }
+    $output = & $Script:PythonExe @args 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0) { throw ('GameOption profile failed: ' + $output.Trim()) }
+    try { return ($output | ConvertFrom-Json) } catch { throw ('GameOption returned no readable result. ' + $output.Trim()) }
+}
+
+function Get-NativeGraphicsPlan {
+    param([string]$Profile)
+    $profilePath = Resolve-GraphicsProfilePath $Profile
+    $target = Get-GraphicsTargetPath
+    $preview = Invoke-GraphicsJson -Profile $Profile
+    $nip = Test-NipReady
+    $npi = Find-NvidiaProfileInspector
+    return [pscustomobject]@{
+        profile = $Profile
+        description = [string]$Script:GraphicsProfiles[$Profile]
+        target = $target
+        profilePath = $profilePath
+        token = Get-GraphicsToken -Target $target -ProfilePath $profilePath
+        sourceBytes = (Get-Item -LiteralPath $target).Length
+        changed = @($preview.changed | ForEach-Object { [string]$_ })
+        preservedLines = [int]$preview.preserved_lines
+        canApply = (@($preview.changed).Count -gt 0)
+        nvidia = [pscustomobject]@{
+            bundledProfile = $nip.Path
+            bundledAvailable = [bool]$nip.Ok
+            inspector = $npi
+            inspectorAvailable = [bool]$npi
+        }
+    }
+}
+
+function Invoke-NativeGraphics {
+    param([string]$Profile, [string]$Token, [switch]$Confirmed)
+    if (-not $Confirmed -or $Token -notmatch '^[0-9a-f]{64}$') { throw 'Preview and explicitly confirm a graphics profile first.' }
+    if (-not (Test-BdoToolsIdle)) { throw 'Close Black Desert and its launcher before changing GameOption.txt.' }
+    $plan = Get-NativeGraphicsPlan -Profile $Profile
+    if ($plan.token -ne $Token) { throw 'GameOption.txt or the selected profile changed after preview. Preview again.' }
+    if (-not $plan.canApply) { throw 'The selected profile already matches the current GameOption.txt.' }
+    $backup = Join-Path (Split-Path -Parent $plan.target) ('GameOption.backup.' + (Get-Date -Format 'yyyyMMdd_HHmmss_fff') + '-' + [guid]::NewGuid().ToString('N').Substring(0,8) + '.txt')
+    Copy-Item -LiteralPath $plan.target -Destination $backup -Force -ErrorAction Stop
+    $written = Invoke-GraphicsJson -Profile $Profile -Write
+    $verify = Invoke-GraphicsJson -Profile $Profile
+    if (@($verify.changed).Count) { throw ('GameOption verification still reports changed keys. Restore from: ' + $backup) }
+    return [pscustomobject]@{
+        operation = 'graphics'
+        profile = $Profile
+        target = $plan.target
+        backup = $backup
+        changed = @($written.changed | ForEach-Object { [string]$_ })
+        preservedLines = [int]$written.preserved_lines
+    }
 }
 
 function Get-GameRootFromPaz {
@@ -3777,9 +3858,9 @@ function Show-MainMenu {
             '1' { Set-PazFolder }
             '2' { Configure-ModChoices }
             '3' { [void](Deploy-Midnight) }
-            '4' { Run-PartCutGen }
-            '5' { Run-MetaInjector }
-            '6' { Run-FullWizard }
+            '4' { [void](Run-PartCutGen) }
+            '5' { [void](Run-MetaInjector) }
+            '6' { [void](Run-FullWizard) }
             'A' { [void](Apply-AllRestoredChoices) }
             '7' { Open-FilesToPatch }
             'S' {
@@ -3804,18 +3885,67 @@ function Show-MainMenu {
     }
 }
 
+# Importing the engine only defines functions. It never opens a menu or touches PAZ.
+if ($MyInvocation.InvocationName -eq '.') { return }
+
+$operation = [ordered]@{ schema = 1; action = $Action; state = 'running'; startedAt = [DateTime]::UtcNow.ToString('o'); finishedAt = $null; error = $null; injectReport = $null }
+$operationMutex = New-Object Threading.Mutex($false, 'Local\BDO-AIO-PatchOperation')
+$operationLock = $false
+$transcribing = $false
+$operationExit = 0
 try {
-    Load-Config
-    Warn-IfClientPatched
-    Show-MainMenu
-} catch {
-    Write-Host ''
-    Write-Err $_.Exception.Message
-    if ($_.ScriptStackTrace) {
-        Write-Host $_.ScriptStackTrace -ForegroundColor DarkGray
+    # ponytail: serialize launcher sessions; per-install locks only if multi-game use is needed.
+    try { $operationLock = $operationMutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $operationLock = $true }
+    if (-not $operationLock) { throw 'Another BDO-AIO tool session is open. Finish or close it first.' }
+    if ($ResultFile) {
+        $null = New-Item -ItemType Directory -Path (Split-Path -Parent $ResultFile) -Force
+        $null = Start-Transcript -LiteralPath ($ResultFile + '.log')
+        $transcribing = $true
+        Write-MetaInjectReport -Report $operation -Path $ResultFile
     }
-    Write-Host ''
-    Write-Host 'Press any key to exit...'
-    $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
-    exit 1
+    Load-Config
+    # Native previews report their own state; the classic warning saves config and
+    # can pause for input, neither of which belongs in a hidden/read-only action.
+    $nativeNoPrompt = $Action -in @('RecoveryPlan', 'RecoveryRestore', 'RecoverySnapshot', 'RecoveryCleanup', 'GraphicsPlan', 'GraphicsApply')
+    if (-not $nativeNoPrompt) { Warn-IfClientPatched }
+    $result = $null
+    switch ($Action) {
+        'Menu' { Show-MainMenu }
+        'Wizard' { $result = Run-FullWizard -NoPrompt:$Script:DashboardAction }
+        'Deploy' { $result = Deploy-Midnight }
+        'PartCut' { $result = Run-PartCutGen }
+        'Inject' { $result = Run-MetaInjector }
+        'Restored' { $result = Apply-AllRestoredChoices }
+        'Options' { Configure-ModChoices }
+        'Recovery' { Restore-UneditedGameFiles }
+        'RecoveryPlan' { $operation['recoveryPlan'] = Invoke-RecoveryJson @('recovery-plan'); $result = $true }
+        'RecoveryRestore' { $operation['recoveryResult'] = Invoke-NativeRecovery -Operation restore -Token $RecoveryToken -Confirmed:$RecoveryConfirmed; $result = $true }
+        'RecoverySnapshot' { $operation['recoveryResult'] = Invoke-NativeRecovery -Operation snapshot -Token $RecoveryToken -Confirmed:$RecoveryConfirmed; $result = $true }
+        'RecoveryCleanup' { $operation['recoveryResult'] = Invoke-NativeRecovery -Operation cleanup -Token $RecoveryToken -Confirmed:$RecoveryConfirmed; $result = $true }
+        'GraphicsPlan' { $operation['graphicsPlan'] = Get-NativeGraphicsPlan -Profile $GraphicsProfile; $result = $true }
+        'GraphicsApply' { $operation['graphicsResult'] = Invoke-NativeGraphics -Profile $GraphicsProfile -Token $GraphicsToken -Confirmed:$GraphicsConfirmed; $result = $true }
+        'Graphics' { Apply-GraphicsProfile }
+        'Nvidia' { Apply-NvidiaProfile }
+        'Dlss' { Show-ExperimentalDlssMenu }
+        'Guide' { Show-Guide2026 }
+        'VerifyPack' { Show-VerifyPack }
+        'VerifyMeta' { $result = Invoke-VanillaRestoreTool @('verify') }
+        'Regen' { Show-HeishaRegenHelper }
+    }
+    $operation['state'] = if ($result -is [bool]) { if ($result) { 'completed' } else { 'stopped' } } else { 'finished' }
+    if ($result -is [bool] -and -not $result) { $operationExit = 1 }
+} catch {
+    $operation['state'] = 'failed'
+    $operation['error'] = $_.Exception.Message
+    $operationExit = 1
+    Write-Err $_.Exception.Message
+    if (-not $Script:DashboardAction) { Pause-Any }
+} finally {
+    $operation['finishedAt'] = [DateTime]::UtcNow.ToString('o')
+    $operation['injectReport'] = $Script:LastMetaInjectReportPath
+    if ($ResultFile) { Write-MetaInjectReport -Report $operation -Path $ResultFile }
+    if ($transcribing) { $null = Stop-Transcript }
+    if ($operationLock) { $operationMutex.ReleaseMutex() }
+    $operationMutex.Dispose()
 }
+exit $operationExit

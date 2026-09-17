@@ -5,6 +5,7 @@ import tempfile
 import struct
 import shutil
 import unittest
+from unittest.mock import patch
 
 from vanilla_restore import cmd_backup, cmd_scan, meta_version, contiguous_game_max, meta_is_injected
 
@@ -120,6 +121,15 @@ class FreshnessGuardTests(unittest.TestCase):
         self.write_meta("pad00000.meta", 3435)
         self.write_meta(AIO_BACKUP_NAME, 3435)
         self.assertEqual(cmd_backup(self.dir, None, False), 0)
+
+    def test_backup_rejects_injected_same_version_candidate(self) -> None:
+        self.write_meta("pad00000.meta", 3435)
+        self.write_meta("pad00000[3435][old].meta.backup", 3435)
+        for number in (1, 2, 61337):
+            (self.dir / f"PAD{number:05d}.PAZ").write_bytes(b"x")
+        with patch("vanilla_restore.referenced_paz", side_effect=[{1, 2}, {1, 2, 61337}]):
+            self.assertEqual(cmd_backup(self.dir, None, False), 4)
+        self.assertFalse((self.dir / AIO_BACKUP_NAME).exists())
 
     def test_scan_refuses_to_infer_state_from_stale_snapshot(self) -> None:
         self.write_meta("pad00000.meta", 3435)

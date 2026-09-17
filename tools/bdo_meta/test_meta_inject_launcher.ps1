@@ -31,13 +31,11 @@ $injectorAst = $ast.Find({
 }, $true)
 if (-not $injectorAst) { throw 'Run-MetaInjector was not found.' }
 if ($injectorAst.Extent.Text -notmatch '\.WaitForExit\(5000\)' -or
-    $injectorAst.Extent.Text -notmatch 'still saving PAZ archives') {
+    $injectorAst.Extent.Text -notmatch 'Meta Injector is running') {
     throw 'Run-MetaInjector does not expose a five-second progress heartbeat.'
 }
-if ($injectorAst.Extent.Text -notmatch 'Get-PazStatusReport' -or
-    $injectorAst.Extent.Text -notmatch "meta\.state.*MODDED" -or
-    $injectorAst.Extent.Text -notmatch 'Run Meta Injector again anyway') {
-    throw 'Run-MetaInjector does not guard against an accidental repeat on a MODDED meta.'
+if ($injectorAst.Extent.Text -match 'Run Meta Injector again anyway') {
+    throw 'Modified meta alone must not block changed settings from being reinjected.'
 }
 
 $reportFunctionAst = $ast.Find({

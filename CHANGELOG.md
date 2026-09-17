@@ -1,5 +1,34 @@
 ## Unreleased
 
+- Native **Graphics & performance** page: preview and apply the bundled GameOption
+  profiles with a fresh-file token, complete timestamped backup, atomic merge and
+  unknown/current-setting preservation. NVIDIA `.nip` import remains explicit in the
+  official NVIDIA tool; experimental upscaling stays separate.
+- Graphics preview/apply runs as a hidden structured child action; stale previews,
+  open BDO/launcher processes and no-op profiles are refused. Applying the profile
+  is not an FPS guarantee and still requires an in-game retest.
+- Remastered 1440p is the dashboard's default GameOption profile; 1080p and DLDSR 4K
+  remain selectable for other displays.
+- Legacy graphics apply now checks the same idle process boundary and uses collision-safe
+  backups. User-facing generated-stage cleanup archives by default, and stale pubic
+  packages are archived instead of deleted.
+
+- Native Recovery & updates page: read-only version/archive preview, separate
+  restore/reference/archive-isolation actions, exact move list and per-action approval.
+  Native recovery runs without a console prompt and never changes saved settings.
+- Recovery approval is bound to the previewed files. Stale/injected backups are
+  refused; originals and receipts are retained, with guarded rollback on failure.
+  Archive isolation moves files rather than deleting them. Required preset-copy
+  failures stop restore; existing hidden preset files are included in the copy.
+
+- Moved the detailed class/pubic-hair/genital editor into the dashboard, with native
+  presets, per-class controls, shared-atlas grouping and validation. No console is
+  required to configure these choices; unchanged legacy selections are preserved.
+- Custom draggable/resizable title bar with minimize/maximize/close controls;
+  matching scrollbars, dropdowns, tabs, checkboxes, text inputs and keyboard focus.
+- The dashboard launcher hides its PowerShell host and displays startup errors in
+  a dialog. Classic and external-tool consoles remain available when needed.
+
 - Status and restore scans now report `STALE BACKUP / UNKNOWN` instead of inferring
   injection from a snapshot taken under a different client version.
 - Normal Meta Injector runs abort when the existing AIO vanilla snapshot is stale;
@@ -10,10 +39,25 @@
   timings plus child-process exit/status evidence under the app's `logs` folder.
 - Shared PAZ meta parsing now reads each fixed-width block in one operation; local
   verification, stage planning, and PartCut planning are about 15–18% faster.
-- The Meta Injector wait now shows a five-second progress heartbeat and reports its
-  elapsed archive-save time when the external tool closes.
-- The launcher now warns and defaults to cancel when the live meta is already MODDED,
-  preventing accidental repeat archive saves while preserving an explicit re-run.
+- The Meta Injector wait shows an elapsed-time heartbeat. This measures the whole
+  injector process, not its internal archive-save phase; no injector speedup is claimed.
+- Native Windows dashboard with Overview, Mod choices, all 12 Body limits,
+  Tools & recovery, and Activity. `START-CLASSIC.bat` retains the console menu.
+- Read-only status scans run off the UI thread; obsolete results are discarded.
+  Saved choices, staged files, modified meta and verified output are distinct states.
+- Save preserves unknown settings, retains a `.bak`, and refuses concurrent edits
+  or malformed configuration. An optional Python picker supports existing installs.
+- Fixed noisy Python output being mistaken for a successful boolean result.
+  Failed generation, backup, injection or verification now stops the workflow.
+- PartCutGen remains interactive and requires explicit confirmation of successful
+  generation; exiting its menu is not treated as successful generation.
+- Rebuilding restored options archives only previous AIO-generated stages, so
+  disabled choices do not remain staged. Personal and Midnight stages are retained.
+- Removed the blanket repeat-injection prompt: a modified meta alone cannot tell
+  whether the user's selected options changed. Game/tool process guards remain.
+- Bounded malformed-meta parsing, cleaned up temporary research files after errors,
+  and rejected injected Meta Injector backup candidates for vanilla snapshots.
+- Added native dashboard and workflow failure regressions to the local/CI gates.
 
 ## 2.4.2 - Catch a rolled-back client version before it wipes your mods
 

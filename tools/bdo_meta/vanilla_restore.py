@@ -20,14 +20,20 @@ Safety rules:
 from __future__ import annotations
 
 import argparse
+import contextlib
+import datetime
 import hashlib
+import io
 import json
 import pathlib
+import os
 import re
 import shutil
 import struct
+import subprocess
 import sys
 import tempfile
+import uuid
 
 from body_size_patcher import IceDecipher, MetaFile
 
@@ -231,9 +237,9 @@ def cmd_backup(paz: pathlib.Path, ice: IceDecipher, force: bool) -> int:
     if source == current and len(cur_refs) != len(src_refs):
         log("[FATAL] unexpected mismatch reading the current meta")
         return 3
-    if source == current and meta_is_injected(paz, cur_refs):
-        log("[FATAL] Refusing to snapshot the current meta as 'vanilla': it references")
-        log(f"        archives above the game's own run (max {max(cur_refs)}), so it is injected.")
+    if meta_is_injected(paz, src_refs):
+        log(f"[FATAL] Refusing to snapshot {source.name} as 'vanilla': it references")
+        log(f"        archives above the game's own run (max {max(src_refs)}), so it is injected.")
         log("        Verify/repair the game first, then run backup again.")
         return 4
 
@@ -395,9 +401,237 @@ def cmd_verify(paz: pathlib.Path, ice: IceDecipher, expect: int = 0) -> int:
     return 0
 
 
+def inspect_recovery_meta(paz: pathlib.Path, path: pathlib.Path, ice: IceDecipher) -> dict:
+    """Read a candidate against real archive bounds without modifying PAZ."""
+    sizes = {int(PAZ_FILE.match(p.name)[1]): p.stat().st_size
+             for p in paz.iterdir() if PAZ_FILE.match(p.name) and p.is_file()}
+    with tempfile.TemporaryDirectory(prefix="bdo-recovery-inspect-") as tmp:
+        shutil.copy2(path, pathlib.Path(tmp) / "pad00000.meta")
+        # The shared parser prints progress; keep the recovery JSON channel clean.
+        with contextlib.redirect_stdout(io.StringIO()):
+            meta = MetaFile(pathlib.Path(tmp), ice)
+        missing = overruns = 0
+        refs = set()
+        for block in meta.fileBlocks:
+            refs.add(block.pazNum)
+            size = sizes.get(block.pazNum)
+            if size is None:
+                missing += 1
+            elif block.fileOffset + (block.zsize or block.size) > size:
+                overruns += 1
+        return {"version": meta_version(path), "sha256": sha256(path),
+                "blocks": len(meta.fileBlocks), "refs": sorted(refs),
+                "missing": missing, "overruns": overruns,
+                "valid": bool(refs) and not missing and not overruns}
+
+
+def _plain_path(path: pathlib.Path) -> None:
+    if path.is_symlink() or (path.exists() and getattr(path.lstat(), "st_file_attributes", 0) & 0x400):
+        raise ValueError(f"Linked/reparse recovery target is not supported: {path.name}")
+
+
+def recovery_fingerprint(paz: pathlib.Path) -> str:
+    """Bind approval to meta bytes, backup bytes and archive names/sizes/mtimes."""
+    rows = []
+    for path in sorted(paz.iterdir(), key=lambda p: p.name.lower()):
+        if PAZ_FILE.match(path.name):
+            _plain_path(path)
+            if not path.is_file():
+                raise ValueError(f"Archive is not a regular file: {path.name}")
+            st = path.stat()
+            rows.append([path.name, st.st_size, st.st_mtime_ns])
+        elif path.name.casefold() in ("pad00000.meta", AIO_BACKUP_NAME.casefold(), AIO_BACKUP_INFO.casefold()) or path.name.casefold().endswith(".meta.backup"):
+            _plain_path(path)
+            rows.append([path.name, sha256(path), path.stat().st_mtime_ns])
+    raw = json.dumps([str(paz.resolve()).casefold(), rows], separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def recovery_plan(paz: pathlib.Path, ice: IceDecipher) -> dict:
+    paz = paz.resolve(strict=True)
+    before = recovery_fingerprint(paz)
+    try:
+        current = inspect_recovery_meta(paz, paz / "pad00000.meta", ice)
+    except (OSError, ValueError, struct.error) as exc:
+        try:
+            version = meta_version(paz / "pad00000.meta")
+        except (OSError, struct.error):
+            version = None
+        current = {"version": version, "sha256": sha256(paz / "pad00000.meta"),
+                   "blocks": 0, "refs": [], "missing": 0, "overruns": 0,
+                   "valid": False, "error": str(exc)}
+    backups = find_backups(paz)
+    backup = None
+    restore_reason = "No reference backup exists. Use the game launcher's repair first."
+    if backups:
+        source = backups[0]
+        backup = {"name": source.name, "version": None, "valid": False}
+        try:
+            backup["version"] = meta_version(source)
+            if backup["version"] != current["version"]:
+                restore_reason = f"Backup client {backup['version']} differs from live client {current['version']}. Restore is blocked."
+            else:
+                backup.update(inspect_recovery_meta(paz, source, ice))
+                if not backup["valid"]:
+                    restore_reason = "The backup has missing archives, out-of-bounds blocks or no references."
+                elif meta_is_injected(paz, set(backup["refs"])) or not contiguous_game_max(paz):
+                    backup["valid"] = False
+                    restore_reason = "The backup is not eligible as a vanilla reference by archive checks."
+                else:
+                    info = paz / AIO_BACKUP_INFO
+                    if source.name.casefold() == AIO_BACKUP_NAME.casefold() and info.exists():
+                        recorded = json.loads(info.read_text(encoding="utf-8-sig"))
+                        if recorded.get("sha256") != backup["sha256"]:
+                            raise ValueError("The AIO backup checksum differs from its recorded checksum.")
+                    restore_reason = "Same-client backup passes archive checks. Restore replaces only pad00000.meta; archives and staging stay in place."
+        except (OSError, ValueError, struct.error) as exc:
+            backup["valid"] = False
+            restore_reason = f"Backup cannot be used: {exc}"
+    top = contiguous_game_max(paz)
+    snapshot_ok = current["valid"] and bool(top) and not meta_is_injected(paz, set(current["refs"]))
+    snapshot_reason = ("Current meta passes archive checks and references no archives above the contiguous game range. Confirm launcher patch/repair is complete; these checks do not prove vendor authenticity."
+                       if snapshot_ok else "Current meta is invalid or references archives outside the contiguous game range. Finish launcher repair before creating a reference.")
+    candidates = []
+    if current["valid"]:
+        # ponytail: conservative high-number rule; never infer archive ownership.
+        ceiling = max(top, max(current["refs"]))
+        candidates = [{"name": p.name, "bytes": p.stat().st_size}
+                      for p in orphan_paz(paz, {ceiling}) if p.is_file()]
+    if recovery_fingerprint(paz) != before:
+        raise ValueError("PAZ changed while scanning. Refresh the recovery preview.")
+    return {"schema": 1, "targetPaz": str(paz), "token": before,
+            "scannedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "current": current, "backup": backup,
+            "restore": {"allowed": bool(backup and backup["valid"]), "reason": restore_reason},
+            "snapshot": {"allowed": snapshot_ok, "reason": snapshot_reason},
+            "cleanup": {"allowed": bool(candidates), "reason": "Moves only the listed unreferenced high-numbered archives into BDO_AIO_RECOVERY. This is recoverable isolation, not disk-space reclamation.",
+                        "files": candidates, "bytes": sum(p["bytes"] for p in candidates)}}
+
+
+def assert_recovery_idle() -> None:
+    if os.name != "nt":
+        return
+    host = pathlib.Path(os.environ["SystemRoot"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
+    command = "if (Get-Process -Name 'BlackDesert*','BDOLauncher','PearlAbyssLauncher','PartCutGen','Meta Injector','Meta Patcher' -ErrorAction SilentlyContinue) { exit 3 }"
+    result = subprocess.run([str(host), "-NoProfile", "-Command", command],
+                            capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=15)
+    if result.returncode:
+        raise ValueError("Close the game, launcher and patch tools before recovery.")
+
+
+def _atomic_recovery_write(target: pathlib.Path, content: bytes) -> None:
+    _plain_path(target)
+    fd, name = tempfile.mkstemp(prefix=".bdo-recovery-", suffix=".tmp", dir=target.parent)
+    tmp = pathlib.Path(name)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(tmp, target)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+
+
+def apply_recovery(paz: pathlib.Path, ice: IceDecipher, operation: str, token: str, confirmed: bool) -> dict:
+    if not confirmed or operation not in ("restore", "snapshot", "cleanup"):
+        raise ValueError("Recovery requires an explicit confirmed operation.")
+    plan = recovery_plan(paz, ice)
+    if not token or token != plan["token"]:
+        raise ValueError("PAZ or its backups changed after preview. Refresh and review again.")
+    if not plan[operation]["allowed"]:
+        raise ValueError(plan[operation]["reason"])
+    assert_recovery_idle()
+    if recovery_fingerprint(paz) != token:
+        raise ValueError("PAZ changed before recovery. Refresh and review again.")
+    root = paz / "BDO_AIO_RECOVERY"
+    _plain_path(root)
+    retained = root / (datetime.datetime.now().strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:8])
+    retained.mkdir(parents=True)
+    current = paz / "pad00000.meta"
+    moved = []
+    written = []
+    originals = {}
+    receipt = {"operation": operation, "state": "running", "changed": [], "retainedPath": str(retained), "previewToken": token}
+    try:
+        if operation == "restore":
+            targets = [current]
+        elif operation == "snapshot":
+            targets = [paz / AIO_BACKUP_NAME, paz / AIO_BACKUP_INFO]
+        else:
+            targets = []
+        for target in targets:
+            originals[target] = target.read_bytes() if target.exists() else None
+            if originals[target] is not None:
+                _atomic_recovery_write(retained / target.name, originals[target])
+        _atomic_recovery_write(retained / "receipt.json", json.dumps(receipt, indent=2).encode())
+        if recovery_fingerprint(paz) != token:
+            raise ValueError("PAZ changed while retaining originals. Nothing was applied.")
+        if operation == "restore":
+            content = (paz / plan["backup"]["name"]).read_bytes()
+            if hashlib.sha256(content).hexdigest() != plan["backup"]["sha256"]:
+                raise ValueError("Backup changed before restore. Nothing was applied.")
+            _atomic_recovery_write(current, content)
+            written.append((current, hashlib.sha256(content).hexdigest()))
+            checked = inspect_recovery_meta(paz, current, ice)
+            if not checked["valid"] or sha256(current) != plan["backup"]["sha256"]:
+                raise ValueError("Restored meta failed verification.")
+        elif operation == "snapshot":
+            content = current.read_bytes()
+            target = paz / AIO_BACKUP_NAME
+            _atomic_recovery_write(target, content)
+            written.append((target, hashlib.sha256(content).hexdigest()))
+            info = {"source": current.name, "reason": "user-confirmed current-client reference",
+                    "sha256": sha256(target), "bytes": len(content), "meta_version": plan["current"]["version"],
+                    "paz_referenced": len(plan["current"]["refs"]), "paz_max": max(plan["current"]["refs"])}
+            if info["sha256"] != plan["current"]["sha256"]:
+                raise ValueError("Current meta changed during reference capture.")
+            data = json.dumps(info, indent=2).encode()
+            _atomic_recovery_write(paz / AIO_BACKUP_INFO, data)
+            written.append((paz / AIO_BACKUP_INFO, hashlib.sha256(data).hexdigest()))
+        else:
+            for item in plan["cleanup"]["files"]:
+                path = paz / item["name"]
+                _plain_path(path)
+                destination = retained / path.name
+                # Same-volume rename; do not copy gigabytes or delete archives.
+                path.rename(destination)
+                moved.append((path, destination))
+        receipt["changed"] = [p.name for p, _ in written] + [p.name for p, _ in moved]
+        receipt["state"] = "completed"
+        _atomic_recovery_write(retained / "receipt.json", json.dumps(receipt, indent=2).encode())
+        return receipt
+    except Exception as exc:
+        rollback_errors = []
+        for source, destination in reversed(moved):
+            try:
+                if source.exists():
+                    raise ValueError(f"Cannot restore {source.name}: its original path is occupied.")
+                destination.rename(source)
+            except Exception as rollback_exc:
+                rollback_errors.append(str(rollback_exc))
+        for target, expected in reversed(written):
+            try:
+                if sha256(target) != expected:
+                    raise ValueError(f"{target.name} changed again; not overwriting it during rollback.")
+                if originals[target] is None:
+                    target.unlink()
+                else:
+                    _atomic_recovery_write(target, originals[target])
+            except Exception as rollback_exc:
+                rollback_errors.append(str(rollback_exc))
+        receipt.update(state="failed", error=str(exc), rollbackErrors=rollback_errors)
+        _atomic_recovery_write(retained / "receipt.json", json.dumps(receipt, indent=2).encode())
+        raise ValueError(f"Recovery stopped: {exc}. Retained files: {retained}. Rollback errors: {rollback_errors}") from exc
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Back up / restore the live BDO meta")
-    ap.add_argument("command", choices=["scan", "backup", "restore", "verify"])
+    ap.add_argument("command", choices=["scan", "backup", "restore", "verify", "recovery-plan", "recover"])
+    ap.add_argument("--operation", choices=["restore", "snapshot", "cleanup"])
+    ap.add_argument("--preview-token", default="")
+    ap.add_argument("--confirmed", action="store_true")
     ap.add_argument("--paz", required=True)
     ap.add_argument("--apply", action="store_true", help="restore: actually write (default is a dry run)")
     ap.add_argument("--keep-paz", action="store_true", help="restore: leave injected PAZ files on disk")
@@ -415,6 +649,16 @@ def main() -> int:
         log(f"[FATAL] missing {dll}")
         return 2
     ice = IceDecipher(dll)
+
+    if args.command in ("recovery-plan", "recover"):
+        try:
+            result = (recovery_plan(paz, ice) if args.command == "recovery-plan" else
+                      apply_recovery(paz, ice, args.operation, args.preview_token, args.confirmed))
+            print(json.dumps(result))
+            return 0
+        except Exception as exc:
+            print(json.dumps({"state": "failed", "error": str(exc)}))
+            return 1
 
     if args.command == "scan":
         return cmd_scan(paz, ice)
