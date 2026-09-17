@@ -15,7 +15,7 @@ The same idea applies to bulky **OptiScaler / Streamline** binaries under `exper
 
 | Path | Role |
 |------|------|
-| `C:\Users\karlo\Documents\Apps\BDO-AIO\` | **Working tree** (scripts + full `pack\` when installed) |
+| `%USERPROFILE%\Documents\Apps\BDO-AIO\` | **Working tree** (scripts + full `pack\` when installed) |
 | GitHub **Releases** | **Primary cloud backup** of the full offline zip (`*-full.7z` + `.sha256`) |
 | `Z:\Backup\BDO-mods-assets\` | **Secondary offline backup** (tools, heisha tree, older packs, full 7z copies) |
 | Git `main` branch | Scripts + docs + many `tools/` assets — **not** a substitute for `pack\` |
@@ -30,9 +30,9 @@ The same idea applies to bulky **OptiScaler / Streamline** binaries under `exper
 From the **parent** of `BDO-AIO` (PowerShell):
 
 ```powershell
-$root = 'C:\Users\karlo\Documents\Apps\BDO-AIO'
+$root = '%USERPROFILE%\Documents\Apps\BDO-AIO'
 $ver  = (Get-Content (Join-Path $root 'CURRENT.txt') -Raw).Trim()
-$out  = "C:\Users\karlo\Documents\Apps\BDO-AIO-v$ver-full.7z"
+$out  = "%USERPROFILE%\Documents\Apps\BDO-AIO-v$ver-full.7z"
 $seven = 'C:\Program Files\7-Zip\7z.exe'
 
 & $seven a -t7z -mx=5 -mmt=on $out `

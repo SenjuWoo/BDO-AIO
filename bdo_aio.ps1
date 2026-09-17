@@ -15,7 +15,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$Script:Version = '2.4.2'
+$Script:Version = '2.5.0'
 $Script:Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Script:ConfigPath = Join-Path $Script:Root 'config.json'
 if ($ConfigFile) { $Script:ConfigPath = [IO.Path]::GetFullPath($ConfigFile) }

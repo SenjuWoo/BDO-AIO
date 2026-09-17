@@ -1,4 +1,4 @@
-## Unreleased
+## 2.5.0 - Native dashboard and Obsidian & Gold themes
 
 - Obsidian & Gold dashboard: Dark default, dimmer Night and warm Light palettes.
   Appearance previews immediately; Save settings remembers it, Reload discards it.

@@ -1,7 +1,7 @@
 # BDO-AIO: Censorship removal vs Midnight XYZW — bug report for Claude
 
 **Date:** 2026-08-06  
-**Project:** `C:\Users\karlo\Documents\Apps\BDO-AIO`  
+**Project:** `%USERPROFILE%\Documents\Apps\BDO-AIO`
 **Game PAZ:** `C:\Program Files (x86)\Steam\steamapps\common\Black Desert Online\PAZ`  
 **Code version at report time:** **2.1.5** (genital underwear fix local; censorship still broken)  
 **Repo / context:** ShugokiFable/BDO-AIO (user machine)  

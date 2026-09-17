@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Source authority is `C:\Users\karlo\Documents\Apps\BDO-AIO-git-push`.
+- Source authority is `%USERPROFILE%\Documents\Apps\BDO-AIO-git-push`.
 - The live game directory, PAZ tree, and deployed `files_to_patch` tree are read-only during implementation and structural validation.
 - Target release is v2.4.0 and includes the unpublished v2.3.1 belly-depth correction.
 - Change only `Max`; never change `Min` or `Default`.
@@ -358,7 +358,7 @@ git commit -m "docs: prepare BDO-AIO 2.4.0"
 ### Task 4: Installed-folder verification and GitHub publication
 
 **Files:**
-- Sync changed tracked product files into: `C:\Users\karlo\Documents\Apps\BDO-AIO`
+- Sync changed tracked product files into: `%USERPROFILE%\Documents\Apps\BDO-AIO`
 - Create one release asset under: `Z:\Backup\BDO-mods-assets`
 - Update after publication: `dev/PUBLISH-STATUS.md`
 
@@ -379,7 +379,7 @@ Expected: working tree clean; `v2.4.0` release/tag absent; authentication valid.
 
 - [ ] **Step 2: Sync the existing install without creating another product copy**
 
-Copy only the files changed for v2.4.0 from the authoritative repo into `C:\Users\karlo\Documents\Apps\BDO-AIO`. Preserve `config.json`, `pack`, personal backups, and unrelated installed assets. Re-run focused tests against the installed copies where practical and compare SHA-256 for each synchronized tracked file.
+Copy only the files changed for v2.4.0 from the authoritative repo into `%USERPROFILE%\Documents\Apps\BDO-AIO`. Preserve `config.json`, `pack`, personal backups, and unrelated installed assets. Re-run focused tests against the installed copies where practical and compare SHA-256 for each synchronized tracked file.
 
 - [ ] **Step 3: Build the single full archive**
 

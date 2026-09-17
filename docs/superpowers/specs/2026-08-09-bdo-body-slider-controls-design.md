@@ -4,7 +4,7 @@
 
 **Target release:** v2.4.0
 
-**Source authority:** `C:\Users\karlo\Documents\Apps\BDO-AIO-git-push`
+**Source authority:** `%USERPROFILE%\Documents\Apps\BDO-AIO-git-push`
 
 **Status:** Approved design awaiting written-spec review
 
@@ -192,7 +192,7 @@ Update `README.md`, `CHANGELOG.md`, `VERSION.md`, `CURRENT.txt`, `VALIDATION.md`
 After validation:
 
 1. Commit the authoritative source.
-2. Sync only the completed product into `C:\Users\karlo\Documents\Apps\BDO-AIO`, preserving personal configuration through migration.
+2. Sync only the completed product into `%USERPROFILE%\Documents\Apps\BDO-AIO`, preserving personal configuration through migration.
 3. Do not create permanent duplicate work/output folders.
 4. Push `main`.
 5. Tag and publish v2.4.0.

@@ -43,7 +43,7 @@ foreach ($attribute in $dashboardXaml.SelectNodes('//@*[local-name()="Name"]')) 
     $control = $Script:DashboardWindow.FindName($attribute.Value)
     if ($control) { $Script:UI[$attribute.Value] = $control }
 }
-$Script:UI.BuildLabel.Text = $Script:Version + ' / dashboard preview'
+$Script:UI.BuildLabel.Text = $Script:Version + ' / Obsidian & Gold'
 
 function Set-DashboardTheme([string]$Name) {
     if ($Name -notin @('Dark', 'Night', 'Light')) { $Name = 'Dark' }

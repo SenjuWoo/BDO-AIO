@@ -117,8 +117,8 @@ PAC stem: UNKNOWN (no "zereth" in file names; classic free set = one of free PHW
   phw_0x_ub_* — nuclear Disable of all 9_upperbody already failed areola restore)
 Path: expected 1_pc/2_phw/armor/9_upperbody/<stem>.pac
 Plan: REMESH / XYZW-style for Zereth chest mesh — NOT Body UNCUT Disable
-Screenshots: C:\Users\karlo\Documents\Black Desert\ScreenShot\2026-08-06_189459295.PNG
-             C:\Users\karlo\Documents\Black Desert\ScreenShot\2026-08-06_189461102.PNG
+Screenshots: %USERPROFILE%\Documents\Black Desert\ScreenShot\2026-08-06_189459295.PNG
+             %USERPROFILE%\Documents\Black Desert\ScreenShot\2026-08-06_189461102.PNG
 Ref: https://bdo.mmo-fashion.com/ranger-zereth/
 ```
 

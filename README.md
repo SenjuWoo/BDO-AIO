@@ -4,7 +4,7 @@
 
 <h1 align="center">BDO Modding AIO</h1>
 
-<p align="center"><strong>Windows menu for Black Desert Online client mods. Not Skyrim.</strong></p>
+<p align="center"><strong>Native Windows dashboard for Black Desert Online client mods.</strong></p>
 
 <p align="center">
   Midnight deploy → PartCutGen → Meta Injector, plus restored body / hide / censorship<br>
@@ -12,9 +12,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ShugokiFable/BDO-AIO/actions/workflows/ci.yml"><img src="https://github.com/ShugokiFable/BDO-AIO/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/SenjuWoo/BDO-AIO/actions/workflows/ci.yml"><img src="https://github.com/SenjuWoo/BDO-AIO/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-c9a227?labelColor=0c0f12" alt="MIT License"></a>
-  <a href="https://github.com/ShugokiFable/BDO-AIO/releases/tag/v2.4.2"><img src="https://img.shields.io/badge/release-v2.4.2-d4af37?labelColor=0c0f12" alt="v2.4.2"></a>
+  <a href="https://github.com/SenjuWoo/BDO-AIO/releases/tag/v2.5.0"><img src="https://img.shields.io/badge/release-v2.5.0-d4af37?labelColor=0c0f12" alt="v2.5.0"></a>
 </p>
 
 <p align="center">
@@ -29,17 +29,22 @@
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-**Current tree: v2.4.2.** Latest release: [v2.4.2](https://github.com/ShugokiFable/BDO-AIO/releases/tag/v2.4.2). Double-click **`START.bat`**.
+**Current tree: v2.5.0.** Latest release: [v2.5.0](https://github.com/SenjuWoo/BDO-AIO/releases/tag/v2.5.0). Double-click **`START.bat`**.
 
 | Download | What you get |
 | --- | --- |
-| **[Full offline `.7z` (recommended)](https://github.com/ShugokiFable/BDO-AIO/releases/latest)** | Scripts + **`pack\`** Midnight (~1.8 GB) + injectors — use this |
+| **[Full offline `.7z` (recommended)](https://github.com/SenjuWoo/BDO-AIO/releases/latest)** | Scripts + **`pack\`** Midnight (~1.8 GB) + injectors — use this |
 | This git `main` branch | Scripts + docs + tools only — **no** Midnight meshes unless you add `pack\` yourself |
 
 Double-click **`START.bat`** for the dashboard, or **`START-CLASSIC.bat`** for the
 original console. Both use the same configuration and patching tools.
 
-### Dashboard workflow (unpublished)
+### Appearance
+
+Obsidian & Gold ships with **Dark** (default), **Night** and **Light** themes.
+Use **Appearance** in the sidebar to preview; **Save settings** remembers the choice.
+
+### Dashboard workflow
 
 1. In **Overview**, choose the live PAZ folder. If Python is not found, use
    **Choose Python...** to select an existing Python 3 `python.exe`, then save.
@@ -63,7 +68,7 @@ the PowerShell host hidden; startup failures appear in a dialog. The real patchi
 tools and legacy console utilities still use interactive consoles. Routine recovery
 and known GameOption profile work now stay in native pages.
 
-### Graphics and performance (unpublished)
+### Graphics and performance
 
 The native graphics page currently handles the reversible, well-understood slice:
 preview and merge a bundled GameOption profile while preserving the rest of the
@@ -75,7 +80,7 @@ The bundled NVIDIA `.nip` remains an explicit import through NVIDIA Profile Insp
 so driver-side confirmation and rollback stay visible. Experimental DLSS / OptiScaler
 is intentionally separate until its compatibility and rollback evidence are stronger.
 
-### Recovery and game updates (unpublished)
+### Recovery and game updates
 
 Choose **Check recovery options** for a read-only preview. It checks live/backup
 client versions, archive bounds and the exact optional archive move list. Choose an
@@ -164,9 +169,9 @@ Details: [`docs/FEATURE-LABELS.md`](docs/FEATURE-LABELS.md)
 | --- | --- |
 | Main menu **[X]** | OptiScaler / DLSS-style inject — **NOT SAFE** |
 
-## Published v2.4.2 / classic-menu quick start
+## Classic-menu quick start
 
-1. Download the latest **`BDO-AIO-v*-full.7z`** from [Releases](https://github.com/ShugokiFable/BDO-AIO/releases/latest) (or use this repo + fill `pack\`).
+1. Download the latest **`BDO-AIO-v*-full.7z`** from [Releases](https://github.com/SenjuWoo/BDO-AIO/releases/latest) (or use this repo + fill `pack\`).
 2. Extract to a short path; install **Python 3** if needed (`winget install Python.Python.3.12`).
 3. **`START.bat`** → **`9`** verify pack (~1.5–2 GB under `pack\`).
 4. **`6`** Full Wizard (or configure options first) → pick live **PAZ** (`pad00000.meta` inside).
@@ -209,7 +214,7 @@ Meta Injector is launched via a short-path canonical stage so deep XYZW trees do
 
 ## Changelog (latest)
 
-### v2.4.2
+### v2.5.0
 
 - Fixes mods silently reverting with the game reporting **corrupted files**. Nothing was corrupt: `pad00000.meta` carries the client version at offset 0, an inject left it reading an older version than the installed client, and the launcher re-downloaded ~1 GB of patches and replaced the meta.
 - Meta Injector runs now record the client version **before** injecting and re-check it after. On a mismatch the AIO says **DO NOT LAUNCH**.
@@ -235,9 +240,9 @@ Full history: [`CHANGELOG.md`](CHANGELOG.md) · version notes: [`VERSION.md`](VE
 
 Verified in this tree:
 
-- `CURRENT.txt` / `VERSION.md` — **v2.4.2**
+- `CURRENT.txt` / `VERSION.md` — **v2.5.0**
 - CI (`.github/workflows/ci.yml`) — PowerShell parse + PSScriptAnalyzer, JSON, Python compile
-- [`VALIDATION.md`](VALIDATION.md) — v2.4.1 tool-validated: 94 Python tests, PowerShell suites, read-only live PAZ audit (75 descriptors, 2,383 Max edits, zero byte-length / Min / Default / protected-axis violations). v2.4.2 did not change slider values.
+- [`VALIDATION.md`](VALIDATION.md) — v2.4.1 tool-validated: 94 Python tests, PowerShell suites, read-only live PAZ audit (75 descriptors, 2,383 Max edits, zero byte-length / Min / Default / protected-axis violations). v2.5.0 did not change slider values.
 
 Not claimed:
 

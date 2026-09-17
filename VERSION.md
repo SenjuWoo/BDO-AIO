@@ -1,4 +1,9 @@
-# BDO-AIO 2.4.2
+# BDO-AIO 2.5.0
+
+Native WPF dashboard with Obsidian & Gold Dark/Night/Light themes, detailed
+editing, recovery and graphics previews. Run START.bat; START-CLASSIC.bat
+retains the console. Theme selection is remembered by Save settings.
+
 
 ## Surviving client patches
 

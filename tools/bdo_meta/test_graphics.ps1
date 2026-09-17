@@ -7,7 +7,7 @@ try {
     $sourceRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
     $Script:GraphicsDir = Join-Path $sourceRoot 'graphics'
     $Script:GameOptionTool = Join-Path $sourceRoot 'tools\bdo_meta\gameoption_patcher.py'
-    $Script:PythonExe = 'C:\Users\karlo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe'
+    $Script:PythonExe = @(Get-Command python -CommandType Application -ErrorAction Stop)[0].Source
     $Script:Config = [pscustomobject]@{ npiPath = '' }
     $profile = 'GameOption_Remastered_1080p.patch'
     $profilePath = Join-Path $Script:GraphicsDir $profile
