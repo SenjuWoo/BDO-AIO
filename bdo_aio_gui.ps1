@@ -45,9 +45,48 @@ foreach ($attribute in $dashboardXaml.SelectNodes('//@*[local-name()="Name"]')) 
 }
 $Script:UI.BuildLabel.Text = $Script:Version + ' / dashboard preview'
 
+function Set-DashboardTheme([string]$Name) {
+    if ($Name -notin @('Dark', 'Night', 'Light')) { $Name = 'Dark' }
+    # Semantic brushes are replaced, never cached by controls; DynamicResource
+    # also updates generated rows, popup items and existing validation messages.
+    $colors = @{
+        Canvas='#1B1C20'; Surface='#232429'; Field='#24262B'; Text='#E9E5DC'; Muted='#B9B5AD'
+        Control='#303137'; Border='#646268'; Hover='#414148'; Pressed='#505057'
+        Gold='#C8A76A'; GoldBorder='#91784D'; OnGold='#171819'; Focus='#D3B477'; OnAccent='#171819'
+        Heading='#D8BC87'; Selection='#655438'; Scroll='#75716A'; ScrollHover='#B39D76'
+        Sidebar='#121316'; NavText='#D2CFC7'; NavMuted='#B0AAA0'; NavGold='#E0C38D'
+        NavSelected='#343029'; NavHover='#29282A'; NavPressed='#454036'; Hero='#27252A'
+        Error='#F29A90'; Warning='#E0BE7B'
+    }
+    $overrides = switch ($Name) {
+        'Night' { @{
+            Canvas='#0E0F12'; Surface='#15161A'; Field='#191A1F'; Text='#CEC9BF'; Muted='#A6A299'
+            Control='#23242A'; Border='#5B5960'; Hover='#323238'; Pressed='#414047'
+            Gold='#AF925F'; GoldBorder='#7F6B48'; Focus='#BDA16B'; Heading='#BEA574'
+            Sidebar='#090A0C'; NavText='#BBB6AC'; NavMuted='#9D988F'; NavGold='#C5AC7C'
+            NavSelected='#29251F'; NavHover='#202023'; NavPressed='#363129'; Hero='#1C1B20'
+            Error='#D98980'; Warning='#C6A76D'
+        } }
+        'Light' { @{
+            Canvas='#F6F3EC'; Surface='#EEEBE3'; Field='#FFFEFA'; Text='#222A2D'; Muted='#586162'
+            Control='#E9E4D9'; Border='#8C8981'; Hover='#D5C6A6'; Pressed='#C3AE80'
+            Gold='#C6A566'; GoldBorder='#94743F'; Focus='#73531E'; OnAccent='#FFFFFF'
+            Heading='#73531E'; Selection='#D5C6A6'; Scroll='#929088'; ScrollHover='#736750'
+            Error='#993B31'; Warning='#7A5A20'
+        } }
+        default { @{} }
+    }
+    foreach ($key in $overrides.Keys) { $colors[$key] = $overrides[$key] }
+    foreach ($key in $colors.Keys) {
+        $brush = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString($colors[$key]))
+        $brush.Freeze()
+        $Script:DashboardWindow.Resources[$key + 'Brush'] = $brush
+    }
+    $Script:DashboardTheme = $Name
+}
 function Set-DashboardMessage([string]$Message, [switch]$IsError) {
     $Script:UI.SaveState.Text = $Message
-    $Script:UI.SaveState.Foreground = if ($IsError) { '#993B31' } else { '#586162' }
+    $Script:UI.SaveState.SetResourceReference([Windows.Controls.TextBlock]::ForegroundProperty, $(if ($IsError) { 'ErrorBrush' } else { 'MutedBrush' }))
     if ($IsError) {
         $peer = [Windows.Automation.Peers.UIElementAutomationPeer]::FromElement($Script:UI.SaveState)
         if (-not $peer) { $peer = [Windows.Automation.Peers.UIElementAutomationPeer]::CreatePeerForElement($Script:UI.SaveState) }
@@ -88,6 +127,9 @@ function Read-DashboardSettings {
     $Script:DashboardLoading = $true
     try {
         Load-Config
+        $theme = if ($Script:Config.PSObject.Properties['uiTheme']) { [string]$Script:Config.uiTheme } else { 'Dark' }
+        Set-DashboardTheme $theme
+        Set-DashboardCombo $Script:UI.ThemeBox ([ordered]@{ Dark = 'Dark'; Night = 'Night'; Light = 'Light' }) $Script:DashboardTheme
         $Script:PythonExe = if ($Script:Config.PSObject.Properties['pythonPath'] -and $Script:Config.pythonPath) { [string]$Script:Config.pythonPath } else { $Script:DashboardPythonOverride }
         $Script:UI.PazPath.Text = [string]$Script:Config.pazFolder
         Set-DashboardCombo $Script:UI.GenderBox $Script:GenderMap $Script:Config.gender
@@ -125,6 +167,7 @@ function Get-DashboardEditedConfig {
             throw 'Select valid gender, armor and censorship options.'
         }
     }
+    $edited | Add-Member -NotePropertyName uiTheme -NotePropertyValue $Script:DashboardTheme -Force
     $edited.pazFolder = $paz
     $edited.gender = [string]$Script:UI.GenderBox.SelectedItem.Tag
     $edited.armor = [string]$Script:UI.ArmorBox.SelectedItem.Tag
@@ -760,6 +803,13 @@ $Script:UI.PresetBackupsButton.Add_Click({
     $folder = Join-Path $Script:Root 'backup'
     if (Test-Path -LiteralPath $folder) { Start-Process explorer.exe -ArgumentList ('"' + $folder + '"') }
     else { Set-DashboardMessage 'No local preset backups exist yet.' }
+})
+$Script:UI.ThemeBox.Add_SelectionChanged({
+    if (-not $Script:DashboardLoading -and $Script:UI.ThemeBox.SelectedItem) {
+        Set-DashboardTheme ([string]$Script:UI.ThemeBox.SelectedItem.Tag)
+        Set-DashboardDirty
+        Set-DashboardMessage 'Theme preview. Save settings to remember it.'
+    }
 })
 $Script:UI.Nav.Add_SelectionChanged({ if ($Script:UI.Nav.SelectedItem) { Show-DashboardPage ([string]$Script:UI.Nav.SelectedItem.Tag) } })
 foreach ($name in @('PazPath', 'SlotClasses')) { $Script:UI[$name].Add_TextChanged({ Set-DashboardDirty }) }

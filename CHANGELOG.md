@@ -1,5 +1,11 @@
 ## Unreleased
 
+- Obsidian & Gold dashboard: Dark default, dimmer Night and warm Light palettes.
+  Appearance previews immediately; Save settings remembers it, Reload discards it.
+  Shared controls, popups and validation feedback follow the active palette.
+  Gold section headings, a framed status card and selected-page marker add contrast;
+  compact navigation keeps all eight pages above Appearance at minimum size.
+
 - Injection stage replacement now retains the previous owned stage until the new
   tree is promoted; a failed promotion restores the previous stage. Regression
   coverage exercises the failure and a successful retry using disposable files.

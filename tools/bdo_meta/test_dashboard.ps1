@@ -4,9 +4,54 @@ $ErrorActionPreference = 'Stop'
 $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('bdo-dashboard-test-' + [guid]::NewGuid().ToString('N'))
 $null = New-Item -ItemType Directory -Path $tempRoot
 $settings = Join-Path $tempRoot 'config.json'
+Add-Type -AssemblyName PresentationFramework
+$bindingLog = [IO.StringWriter]::new()
+$bindingListener = [Diagnostics.TextWriterTraceListener]::new($bindingLog)
+$bindingSource = [Diagnostics.PresentationTraceSources]::DataBindingSource
+$previousTraceLevel = $bindingSource.Switch.Level
+$bindingSource.Switch.Level = [Diagnostics.SourceLevels]::Warning
+$null = $bindingSource.Listeners.Add($bindingListener)
 try {
     . (Join-Path $PSScriptRoot '..\..\bdo_aio_gui.ps1') -ConfigFile $settings -NoShow
     if (Test-Path -LiteralPath $settings) { throw 'Opening the dashboard wrote settings.' }
+    if ($Script:UI.ThemeBox.SelectedItem.Tag -ne 'Dark') { throw 'Dark must be the default theme.' }
+    foreach ($theme in @('Night', 'Light', 'Dark')) {
+        $Script:UI.ThemeBox.SelectedItem = @($Script:UI.ThemeBox.Items | Where-Object Tag -eq $theme)[0]
+        if ($Script:DashboardTheme -ne $theme -or -not $Script:DashboardDirty) { throw 'Theme selection did not preview or mark unsaved.' }
+        if (Test-Path -LiteralPath $settings) { throw 'Theme preview saved unrelated choices.' }
+        if ($Script:DashboardWindow.Background.ToString() -ne $Script:DashboardWindow.Resources['CanvasBrush'].ToString()) { throw 'Window theme resource is stale.' }
+    }
+    if (-not (Save-DashboardSettings)) { throw 'Theme save failed.' }
+    $Script:UI.ThemeBox.SelectedItem = @($Script:UI.ThemeBox.Items | Where-Object Tag -eq 'Night')[0]
+    if (-not (Save-DashboardSettings)) { throw 'Night save failed.' }
+    $savedTheme = Get-Content -LiteralPath $settings -Raw | ConvertFrom-Json
+    if ($savedTheme.uiTheme -ne 'Night') { throw 'Theme did not persist.' }
+    $Script:UI.ThemeBox.SelectedItem = @($Script:UI.ThemeBox.Items | Where-Object Tag -eq 'Light')[0]
+    Read-DashboardSettings
+    if ($Script:DashboardTheme -ne 'Night') { throw 'Reload did not discard theme preview.' }
+    $savedTheme.uiTheme = 'invalid'
+    [IO.File]::WriteAllText($settings, ($savedTheme | ConvertTo-Json -Depth 32))
+    Read-DashboardSettings
+    if ($Script:DashboardTheme -ne 'Dark') { throw 'Invalid saved theme did not fall back to Dark.' }
+    Set-DashboardMessage 'Fixture error' -IsError
+    $Script:UI.ThemeBox.SelectedItem = @($Script:UI.ThemeBox.Items | Where-Object Tag -eq 'Night')[0]
+    Set-DashboardMessage 'Fixture error' -IsError
+    if ($Script:UI.SaveState.Foreground.ToString() -ne $Script:DashboardWindow.Resources['ErrorBrush'].ToString()) { throw 'Error text ignores theme.' }
+    Read-DashboardSettings
+    foreach ($theme in @('Dark', 'Night', 'Light')) {
+        Set-DashboardTheme $theme
+        foreach ($match in [regex]::Matches($dashboardXaml.OuterXml, '\{DynamicResource (\w+)\}')) {
+            if (-not $Script:DashboardWindow.Resources.Contains($match.Groups[1].Value)) { throw "Missing theme resource: $($match.Value)" }
+        }
+        $Script:UI.ThemeBox.ApplyTemplate() | Out-Null
+        $popup = $Script:UI.ThemeBox.Template.FindName('PART_Popup', $Script:UI.ThemeBox)
+        if ($popup.Child.Background.ToString() -ne $Script:DashboardWindow.Resources['FieldBrush'].ToString()) { throw 'Dropdown surface ignores theme.' }
+        Set-DashboardMessage 'Error retained across palette changes' -IsError
+        Set-DashboardTheme $(if ($theme -eq 'Light') { 'Night' } else { 'Light' })
+        if ($Script:UI.SaveState.Foreground.ToString() -ne $Script:DashboardWindow.Resources['ErrorBrush'].ToString()) { throw 'Existing validation text kept a stale brush.' }
+    }
+    Read-DashboardSettings
+    Write-Host 'PASS: theme default, live preview, explicit save, reload, invalid fallback, complete resources and themed popup/feedback.'
     if ($Script:BodyInputs.Count -ne 12) { throw 'Body axis coverage changed.' }
     if ($Script:DashboardActions.Count -ne 11) { throw "Unexpected action coverage: $($Script:DashboardActions.Count)" }
     if ([string]$Script:UI.GraphicsProfile.SelectedItem.Tag -ne 'GameOption_Remastered_1440p.patch') { throw '1440p is not the default graphics profile.' }
@@ -95,6 +140,11 @@ try {
     $root.Measure([Windows.Size]::new(940, 680))
     $root.Arrange([Windows.Rect]::new(0, 0, 940, 680))
     $root.UpdateLayout()
+    $lastPage = $Script:UI.Nav.Items[$Script:UI.Nav.Items.Count - 1]
+    $navBottom = $lastPage.TranslatePoint([Windows.Point]::new(0, $lastPage.ActualHeight), $root).Y
+    $themeTop = $Script:UI.ThemeBox.TranslatePoint([Windows.Point]::new(0, 0), $root).Y
+    if ($lastPage.ActualHeight -le 0 -or $navBottom -gt ($themeTop - 24)) { throw 'At 940x680, navigation overlaps the Appearance label/selector.' }
+    Write-Host 'PASS: all eight navigation entries fit above Appearance at 940x680.'
     $Script:UI.PageScroll.ScrollToVerticalOffset(120)
     $root.UpdateLayout()
     if ($Script:UI.PageScroll.VerticalOffset -le 0) { throw 'Custom vertical scrollbar lost scrolling.' }
@@ -212,6 +262,9 @@ try {
     if ($CaptureDir) {
         $null = New-Item -ItemType Directory -Path $CaptureDir -Force
         $Script:UI.BuildLabel.Text = 'UI test fixture / no game writes'
+        foreach ($captureTheme in @('Dark', 'Night', 'Light')) {
+        Set-DashboardTheme $captureTheme
+        Set-DashboardCombo $Script:UI.ThemeBox ([ordered]@{ Dark='Dark'; Night='Night'; Light='Light' }) $captureTheme
         foreach ($size in @(@(1120, 820), @(940, 680))) {
             $detailCapture = 0
             foreach ($index in @(0, 1, 2, 3, 4, 5, 6, 7, 3, 3)) {
@@ -227,22 +280,30 @@ try {
                 $encoder = [Windows.Media.Imaging.PngBitmapEncoder]::new()
                 $encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
                 $suffix = if ($index -eq 3 -and $Script:UI.DetailTabs.SelectedIndex -gt 0) { '-' + $Script:UI.DetailTabs.SelectedIndex } else { '' }
-                $path = Join-Path $CaptureDir ("$($Script:UI.Nav.SelectedItem.Tag)$suffix-$($size[0]).png")
+                $path = Join-Path $CaptureDir ("$captureTheme-$($Script:UI.Nav.SelectedItem.Tag)$suffix-$($size[0]).png")
                 $stream = [IO.File]::Create($path)
                 try { $encoder.Save($stream) } finally { $stream.Dispose() }
             }
             $Script:UI.DetailTabs.SelectedIndex = 0
         }
-        Write-Host "Rendered all eight pages at both supported test sizes: $CaptureDir"
+        }
+        Write-Host "Rendered all eight pages in three themes at both supported test sizes: $CaptureDir"
     }
     [IO.File]::WriteAllText($settings, '{broken')
     $rejected = $false
     try { Load-Config } catch { $rejected = $true }
     if (-not $rejected -or [IO.File]::ReadAllText($settings) -ne '{broken') { throw 'Malformed settings were replaced with defaults.' }
     Write-Host 'PASS: unreadable settings remain untouched.'
+    $bindingListener.Flush()
+    if ($bindingLog.ToString()) { throw ('WPF binding diagnostics: ' + $bindingLog.ToString()) }
+    Write-Host 'PASS: no WPF binding warnings/errors.'
     $Script:DashboardDirty = $false
     $Script:DashboardWindow.Close()
 } finally {
+    $bindingSource.Listeners.Remove($bindingListener)
+    $bindingSource.Switch.Level = $previousTraceLevel
+    $bindingListener.Dispose()
+    $bindingLog.Dispose()
     $resolved = [IO.Path]::GetFullPath($tempRoot)
     if ($resolved.StartsWith([IO.Path]::GetTempPath(), [StringComparison]::OrdinalIgnoreCase) -and $resolved -match 'bdo-dashboard-test-[0-9a-f]{32}$') { Remove-Item -LiteralPath $resolved -Recurse -Force }
 }
