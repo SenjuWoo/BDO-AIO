@@ -1,15 +1,24 @@
 # Workspace ownership
 
-Updated 2026-09-10. Authoritative source is
-`C:/Users/karlo/Documents/Apps/BDO-AIO-git-push`; the user's full local app is
-`C:/Users/karlo/Documents/Apps/BDO-AIO`. Reference assets under
-`Z:/Backup/BDO-mods-assets` remain read-only.
+## Current user policy
 
-The user requested review and continuation of the app plan, with pushing/publishing
-deferred until edits are finished. Preserve existing branch work. Game PAZ, live
-staging and game saves remain read-only during development.
+Keep one working app at `Documents/Apps/BDO-AIO` and replace changed files IN PLACE.
+Use Git/GitHub for version history, not full local version copies. The existing
+sibling `BDO-AIO-git-push` holds source history; preserve it.
 
-Validated runtime files may be synchronized to the full local app with a scoped
-allowlist and exact-file backups. Do not mirror/delete its pack, personal config,
-backups or private content. Machine-local Python selection belongs only in local
-config, not shipped defaults. A local app update does not authorize game injection.
+Do not create release archives, preflight copies, version folders or developer
+backup snapshots unless explicitly requested. Temporary verification extractions
+must be removed after use. Preserve personal config, Customization presets,
+pack assets, game PAZ, live staging and game saves. Reference assets under
+`Z:/Backup/BDO-mods-assets` are not app-output storage.
+
+Synchronize verified files through a scoped allowlist without copying config or
+creating another backup set. Machine-local paths do not belong in shipped defaults.
+App updates do not authorize game injection, public publication or force pushes.
+
+## Cleanup performed
+
+Generated review packages, developer snapshots and review extraction trees were
+removed at the user's request. Personal Customization backups were retained.
+Earlier artifact paths in review/validation records are historical evidence, not
+promises that those disposable builds remain on disk.
