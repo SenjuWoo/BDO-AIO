@@ -59,7 +59,7 @@
    </StackPanel>
   </Grid></Border>
  <Grid Grid.Row="1">
-  <Grid.ColumnDefinitions><ColumnDefinition Width="210"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+  <Grid.ColumnDefinitions><ColumnDefinition Width="224"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
   <Border Background="#182024"><DockPanel Margin="22,30,18,24">
    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,34"><TextBlock Text="BDO" Foreground="#E6D5B1" FontSize="32" FontWeight="SemiBold"/><TextBlock Text="MODDING AIO" Foreground="#CBD0CB" FontSize="13" Margin="1,2,0,0"/></StackPanel>
    <StackPanel DockPanel.Dock="Bottom"><TextBlock x:Name="BuildLabel" Text="Local development" Foreground="#CBD0CB" FontSize="12"/><TextBlock Text="Your files. Your choices." Foreground="#AEB9B5" FontSize="12" Margin="0,6,0,0"/></StackPanel>
