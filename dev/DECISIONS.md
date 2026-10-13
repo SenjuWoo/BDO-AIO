@@ -66,3 +66,21 @@ advertised job, so it was dead weight in the menu.
 
 **Kept:** `_body_uncut` stays in `$Script:AioPatchFolderPrefixes` so recovery still purges
 leftover stages from older versions.
+
+## D-2026-10-13-I - Resume per-outfit uncut as "Open-chest outfits", detected from meshes
+
+**Decision:** Un-shelve the per-outfit uncut. Ship it as an opt-in setting (`openChestUncut`:
+off / open / window, default off) built on `partcut_recut`'s technique, with the outfit list
+produced by mesh analysis instead of hand bisection. Detail: [OPEN-CHEST.md](OPEN-CHEST.md).
+
+**Supersedes:** D-2026-08-06-A ("free only"). Scope is now every vanilla top not staged by
+Midnight, free or cash-shop, per user choice on 2026-10-13. D-2026-08-07-H stands: the old
+global "Body UNCUT" menu stays removed; this is a different mechanism (folder-to-file recut).
+
+**Why:** "Nothing in the game files marks a top as open-chested" was the blocker. The meshes
+do: a native `.pac` reader plus a front-view coverage measure separates bare/windowed tops
+from closed ones, validated against PACtool and on contact sheets.
+
+**Scope limits:** Tamer and Shai excluded (age-ambiguous / childlike); texture-alpha windows
+and event-costume PACs not handled; list tied to client 3454 and refreshable with
+`open_chest_scan.py`. No in-game proof yet.

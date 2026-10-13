@@ -98,5 +98,7 @@ jobs:
       - name: Python regression tests
         shell: pwsh
         run: |
+          python -m pip install --disable-pip-version-check numpy
+          if ($LASTEXITCODE -ne 0) { throw "numpy install failed." }
           python -B -m unittest discover -s tools/bdo_meta -p 'test_*.py'
           if ($LASTEXITCODE -ne 0) { throw "Python regression tests failed." }

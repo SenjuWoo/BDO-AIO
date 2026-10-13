@@ -323,3 +323,21 @@ outfit combination has been visually tested. No publication, push or release was
 - No commit, push, tag, GitHub release or public upload was performed. CI's hosted
   PSScriptAnalyzer gate and exact-SHA release sequence remain outstanding publication
   gates.
+
+### Open-chest outfits (2.6.0 development) - 2026-10-13
+
+Read-only on the game: archives and meta were only read; every write went to the repository
+or a scratch folder. No in-game run of this feature has happened yet.
+
+| Check | Result |
+|-------|--------|
+| Native `.pac` reader vs PACtool 1.4.4, all Ranger upper bodies | 348/348 identical (positions <= 1e-4, triangles exact); 4 PACs hold no mesh in either tool |
+| Detector reproduces the prototype that was checked on contact sheets | 99 Ranger tops recorded, zero metric differences |
+| Cross-class consistency | Same premium outfit scores alike on Ranger, Witch and Seraph (for example `10_ub_0205`: mound 0.54, nipple 0.82 on both) |
+| Narrowed Look-7 shortlist (33 small-tier Ranger outfits) | exactly `pew_hw_ub_0031` and `pew_kw_ub_0001` flagged open |
+| Registry scan | 18 classes, client 3454; Tamer, Shai and Old Maehwa (no nude body) not included |
+| Apply on a temp copy of the live `partcutdesc.xml` | 18 classes, 3 shared groups rewritten, 0 declarations after the first `<Relation>`, non-UTF-8 byte and CRLF preserved |
+| Python tests | new suites for the PAC reader, the detector and the recut (22 tests) pass |
+| PowerShell suites | config round trip, launcher static and dashboard pass with the new setting |
+
+Not proven: in-game appearance of any outfit, texture-alpha windows, event-costume tops.

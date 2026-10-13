@@ -84,6 +84,9 @@ try {
     foreach ($tier in @('off', 'minimal', 'medium', 'high', 'expanded')) {
         if (-not @($Script:UI.CensorshipBox.Items | Where-Object Tag -eq $tier).Count) { throw "Missing censorship tier $tier." }
     }
+    foreach ($mode in @('off', 'open', 'window')) {
+        if (-not @($Script:UI.OpenChestBox.Items | Where-Object Tag -eq $mode).Count) { throw "Missing open-chest mode $mode." }
+    }
     Write-Host 'PASS: settings round-trip, unknown fields, atomic backup, invalid input and concurrent edits.'
 
     # The former console-only options now edit the real settings through WPF controls.

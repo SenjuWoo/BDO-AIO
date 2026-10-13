@@ -1,3 +1,21 @@
+## 2.6.0 - Open-chest outfits
+
+- New opt-in **Open-chest outfits** (Off / Open tops only / Open tops + cleavage windows).
+  Vanilla part cuts hide the body under every top, so a top with a cleavage opening shows a
+  seam where the breast should be. This uncuts the body under only the tops whose mesh leaves
+  the chest open; every other top keeps its vanilla cut and does not clip.
+- Detection is geometric: a native `.pac` reader (checked against PACtool: 348 of 348 Ranger
+  PACs identical) feeds a front-view coverage measure of each class's breast mound and
+  nipple zone. Shipped list covers every female class except Tamer and Shai
+  (`tools/bdo_meta/open_chest_registry.json`, client 3454).
+- Applied right after PartCutGen, before Meta Injector, group-aware (cut groups are shared
+  between classes). Outfits staged by Midnight XYZW are skipped. Re-running is idempotent.
+- `open_chest_scan.py` regenerates the list after a client patch (needs numpy). Tops added
+  by a patch keep the vanilla cut until then.
+- `partcut_recut.py` no longer rewrites non-UTF-8 bytes or line endings in
+  `partcutdesc.xml` (the live file contains a 0x8c byte).
+- Not detected: windows made by texture alpha / painted skin, and `event_costume` PACs.
+
 ## 2.5.0 - Native dashboard and Obsidian & Gold themes
 
 - Obsidian & Gold dashboard: Dark default, dimmer Night and warm Light palettes.

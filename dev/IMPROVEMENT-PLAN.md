@@ -82,7 +82,7 @@ Do not push, tag or publish until the requested edit/review cycle is finished.
   in-game FPS/appearance check remain optional; the saved-choice Meta Injector timing
   gate is complete and does not justify changing the external archive-save phase.
 
-## 3. Shelved per-outfit work — research only, not restored as a global toggle
+## 3. Per-outfit work — resumed 2026-10-13 as opt-in Open-chest outfits (see [OPEN-CHEST.md](OPEN-CHEST.md))
 
 - Resume `dev/PARTCUT-MECHANICS.md` only with a confirmed class/outfit test target.
 - Use `partcut_recut.py --dry-run` against the current live meta first. Vanilla

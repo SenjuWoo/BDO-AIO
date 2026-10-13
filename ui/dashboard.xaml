@@ -122,6 +122,8 @@
      <TextBlock Text="Use comma-separated prefixes, e.g. pew,pdw for Ranger and Dark Knight or phm,pcm for Warrior and Striker. Your gender filter still applies." Style="{StaticResource Help}"/>
      <Separator/><TextBlock Text="Additional options" Style="{StaticResource Heading}"/>
      <Label Content="_Censorship textures" Target="{Binding ElementName=CensorshipBox}" Padding="0" Margin="0,0,0,6"/><ComboBox x:Name="CensorshipBox" AutomationProperties.Name="Censorship textures"/>
+     <Label Content="_Open-chest outfits" Target="{Binding ElementName=OpenChestBox}" Padding="0" Margin="0,16,0,6"/><ComboBox x:Name="OpenChestBox" AutomationProperties.Name="Open-chest outfits"/>
+     <TextBlock Text="Uncuts the body under cleavage and open-chest tops only, so the breast shows naturally instead of a seam. Closed tops keep their vanilla cut. Applied right after PartCutGen." Style="{StaticResource Help}"/>
      <TextBlock x:Name="AdvancedSummary" Style="{StaticResource Help}" Margin="0,18,0,14"/>
      <Button x:Name="DetailsButton" Content="Edit class styles &amp; meshes" HorizontalAlignment="Left"/>
      <TextBlock Text="Fine-tune pubic hair and genital meshes in the Detailed editor. All choices share the same Save settings button; nothing is generated until you apply." Style="{StaticResource Help}"/>

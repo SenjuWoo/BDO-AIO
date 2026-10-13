@@ -1,4 +1,24 @@
-# BDO-AIO 2.5.0
+# BDO-AIO 2.6.0
+
+Open-chest outfits: tops that leave the chest open no longer cut the body under them, so
+the breast shows naturally through cleavage windows instead of a seam. Opt-in, off by default.
+Run START.bat; START-CLASSIC.bat retains the console.
+
+## Open-chest outfits
+
+- New **Open-chest outfits** choice (Mod choices page, or Options `[U]` in the console):
+  Off / Open tops only / Open tops + cleavage windows.
+- Detected from the tops' own meshes, per class, from your client's archives: a native
+  `.pac` reader measures how much of the breast area each top leaves uncovered. Closed tops,
+  bikini cups and narrow plunges keep their vanilla cut, so they do not clip.
+- Runs automatically right after PartCutGen and before Meta Injector. Outfits Midnight
+  already stages are never touched. Tops added by later patches keep the vanilla cut until
+  the list is refreshed (`open_chest_scan.py`).
+- Every female class except Tamer and Shai. Details and limits: `dev/OPEN-CHEST.md`.
+- Fixed: the part-cut recut helper no longer rewrites non-UTF-8 bytes in `partcutdesc.xml`.
+
+## 2.5.0
+
 
 Native WPF dashboard with Obsidian & Gold Dark/Night/Light themes, detailed
 editing, recovery and graphics previews. Run START.bat; START-CLASSIC.bat

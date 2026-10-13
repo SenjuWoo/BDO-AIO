@@ -135,6 +135,7 @@ function Read-DashboardSettings {
         Set-DashboardCombo $Script:UI.GenderBox $Script:GenderMap $Script:Config.gender
         Set-DashboardCombo $Script:UI.ArmorBox $Script:ArmorMap $Script:Config.armor
         Set-DashboardCombo $Script:UI.CensorshipBox ([ordered]@{ off = 'Off'; minimal = 'Minimal'; medium = 'Medium'; high = 'High'; expanded = 'Expanded (scans the full meta)' }) $Script:Config.censorshipTier
+        Set-DashboardCombo $Script:UI.OpenChestBox ([ordered]@{ off = 'Off'; open = 'Open tops only (safe)'; window = 'Open tops + cleavage windows' }) $Script:Config.openChestUncut
         $Script:UI.XyzwCheck.IsChecked = [bool]$Script:Config.xyzwCollections
         foreach ($key in @('hideGloves', 'hideBoots', 'hideHelmets', 'hideWeapons', 'hideStockings')) { $Script:UI[$key].IsChecked = [bool]$Script:Config.$key }
         Set-DashboardBodyValues (Get-BodySizeSpec)
@@ -160,11 +161,11 @@ function Get-DashboardEditedConfig {
         $Script:DashboardInvalidPage = 0
         throw 'Choose a PAZ folder containing pad00000.meta.'
     }
-    foreach ($name in @('GenderBox', 'ArmorBox', 'CensorshipBox')) {
+    foreach ($name in @('GenderBox', 'ArmorBox', 'CensorshipBox', 'OpenChestBox')) {
         if (-not $Script:UI[$name].SelectedItem) {
             $Script:DashboardInvalidInput = $Script:UI[$name]
             $Script:DashboardInvalidPage = 1
-            throw 'Select valid gender, armor and censorship options.'
+            throw 'Select valid gender, armor, censorship and open-chest options.'
         }
     }
     $edited | Add-Member -NotePropertyName uiTheme -NotePropertyValue $Script:DashboardTheme -Force
@@ -172,6 +173,7 @@ function Get-DashboardEditedConfig {
     $edited.gender = [string]$Script:UI.GenderBox.SelectedItem.Tag
     $edited.armor = [string]$Script:UI.ArmorBox.SelectedItem.Tag
     $edited.censorshipTier = [string]$Script:UI.CensorshipBox.SelectedItem.Tag
+    $edited.openChestUncut = [string]$Script:UI.OpenChestBox.SelectedItem.Tag
     $edited.xyzwCollections = [bool]$Script:UI.XyzwCheck.IsChecked
     foreach ($key in @('hideGloves', 'hideBoots', 'hideHelmets', 'hideWeapons', 'hideStockings')) { $edited.$key = [bool]$Script:UI[$key].IsChecked }
     $values = [ordered]@{}
@@ -813,7 +815,7 @@ $Script:UI.ThemeBox.Add_SelectionChanged({
 })
 $Script:UI.Nav.Add_SelectionChanged({ if ($Script:UI.Nav.SelectedItem) { Show-DashboardPage ([string]$Script:UI.Nav.SelectedItem.Tag) } })
 foreach ($name in @('PazPath', 'SlotClasses')) { $Script:UI[$name].Add_TextChanged({ Set-DashboardDirty }) }
-foreach ($name in @('GenderBox', 'ArmorBox', 'CensorshipBox')) { $Script:UI[$name].Add_SelectionChanged({ Set-DashboardDirty }) }
+foreach ($name in @('GenderBox', 'ArmorBox', 'CensorshipBox', 'OpenChestBox')) { $Script:UI[$name].Add_SelectionChanged({ Set-DashboardDirty }) }
 foreach ($name in @('XyzwCheck', 'hideGloves', 'hideBoots', 'hideHelmets', 'hideWeapons', 'hideStockings')) { $Script:UI[$name].Add_Click({ Set-DashboardDirty }) }
 $Script:UI.RecommendedButton.Add_Click({ Set-DashboardBodyValues $Script:BodySizeAxisDefaults; Set-DashboardDirty })
 $Script:UI.SaveButton.Add_Click({ if (Save-DashboardSettings) { Start-DashboardScan } })

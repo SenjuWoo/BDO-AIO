@@ -112,7 +112,12 @@ diffuse under `character/texture` with a matching stem, so it can rank but not e
 
 ---
 
-## Why this is shelved (2026-08-07)
+## Resumed (2026-10-13)
+
+Picked up as the opt-in **Open-chest outfits** feature: meshes are analysed instead of bisected
+by hand. See [OPEN-CHEST.md](OPEN-CHEST.md). The rest of this file stays the mechanism reference.
+
+## Why this was shelved (2026-08-07)
 
 The areola seam is only noticeable at high breast-size values, so it is cosmetic for most
 players. Per-outfit uncut works but needs a hand-built list per outfit per class, and

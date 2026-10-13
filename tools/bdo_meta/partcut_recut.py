@@ -111,7 +111,8 @@ def main() -> int:
     if not kept:
         log("  [WARN] --keep matched nothing; this re-cuts the whole folder (vanilla).")
 
-    xml = xml_path.read_text("utf-8", "replace")
+    # latin-1 round trip keeps every byte: the file can hold non-UTF-8 names (0x8c measured)
+    xml = xml_path.read_bytes().decode("latin-1")
     begin, end = BEGIN.format(group=args.group), END.format(group=args.group)
 
     # drop any previous run's block, then the folder rule
@@ -130,7 +131,8 @@ def main() -> int:
     anchor = xml.find("<Relation")
     if anchor < 0:
         raise SystemExit("[FATAL] no <Relation> to anchor against")
-    xml_path.write_text(xml[:anchor] + block + xml[anchor:], "utf-8")
+    nl = "\r\n" if "\r\n" in xml else "\n"
+    xml_path.write_bytes((xml[:anchor] + block.replace("\n", nl) + xml[anchor:]).encode("latin-1"))
     log(f"  wrote {len(recut)} <File> entries into <CutType Name=\"{args.group}\">")
     log("  next: Meta Injector (step 5), then restart the client")
     return 0

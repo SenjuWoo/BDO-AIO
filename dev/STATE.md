@@ -1,5 +1,14 @@
 # BDO-AIO state
 
+## 2026-10-13 - open-chest outfits (2.6.0 development, branch `feat/open-chest-uncut`)
+
+Shelved per-outfit work resumed and implemented: see [OPEN-CHEST.md](OPEN-CHEST.md) and
+D-2026-10-13-I. Built and tested locally (Python + PowerShell suites); applied only to a temp
+copy of `partcutdesc.xml`. Next gate is the user's in-game run: set Open-chest outfits, run
+PartCutGen then Meta Injector, check a known open top (for example Ranger `pew_kw_ub_0001`,
+`pew_hw_ub_0031`) and a closed top for clipping. Release stays gated on that result.
+Published baseline is still v2.5.0.
+
 ## Current review checkpoint — 2026-09-17
 
 See [REVIEW-RESUME.md](REVIEW-RESUME.md) for current review evidence and limits.

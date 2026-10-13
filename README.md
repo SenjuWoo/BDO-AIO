@@ -29,7 +29,7 @@
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-**Current tree: v2.5.0.** Latest release: [v2.5.0](https://github.com/SenjuWoo/BDO-AIO/releases/tag/v2.5.0). Double-click **`START.bat`**.
+**Current tree: v2.6.0 (unreleased, in development).** Latest release: [v2.5.0](https://github.com/SenjuWoo/BDO-AIO/releases/tag/v2.5.0). Double-click **`START.bat`**.
 
 | Download | What you get |
 | --- | --- |
@@ -67,6 +67,24 @@ The dashboard has its own title bar, scrollbar and form styling. `START.bat` lau
 the PowerShell host hidden; startup failures appear in a dialog. The real patching
 tools and legacy console utilities still use interactive consoles. Routine recovery
 and known GameOption profile work now stay in native pages.
+
+### Open-chest outfits
+
+Vanilla part cuts hide the body under every top, so an outfit with a cleavage opening
+shows a seam where the breast should be, worst at high breast sliders. **Open-chest
+outfits** (Mod choices, or Options `[U]` in the console) uncuts the body under only the
+tops whose mesh leaves the chest open; every other top keeps its vanilla cut.
+
+- **Open tops only**: bare-chest boleros, shoulder pieces, corset-only tops. Almost nothing to clip.
+- **Open tops + cleavage windows**: also slits, keyholes and open fronts. Breasts at extreme
+  sliders can poke through the part of the top that stays.
+- Bikini cups and narrow plunges cover the nipples, so they stay vanilla.
+- Off by default. It runs right after PartCutGen, before Meta Injector, and skips outfits
+  Midnight already stages. Every female class except Tamer and Shai.
+- The shipped list matches client 3454. Outfits added by a later patch keep the vanilla cut until
+  the list is refreshed with `tools/bdo_meta/open_chest_scan.py` (needs numpy).
+- Not detected: windows made by texture transparency instead of missing geometry, and
+  event-costume tops. Details and evidence: [`dev/OPEN-CHEST.md`](dev/OPEN-CHEST.md).
 
 ### Graphics and performance
 
@@ -213,6 +231,11 @@ Other regions: same, then Meta Patcher only if your region needs it (not bundled
 Meta Injector is launched via a short-path canonical stage so deep XYZW trees do not hit Windows path limits.
 
 ## Changelog (latest)
+
+### v2.6.0 (in development)
+
+- New opt-in **Open-chest outfits**: the body shows naturally through cleavage and open-chest tops instead of a cut-off seam. Detected from each top's own mesh, per class; closed tops keep their vanilla cut. See above and [`dev/OPEN-CHEST.md`](dev/OPEN-CHEST.md).
+- `partcut_recut.py` no longer rewrites non-UTF-8 bytes in `partcutdesc.xml`.
 
 ### v2.5.0
 

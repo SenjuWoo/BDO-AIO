@@ -15,7 +15,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$Script:Version = '2.5.0'
+$Script:Version = '2.6.0'
 $Script:Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Script:ConfigPath = Join-Path $Script:Root 'config.json'
 if ($ConfigFile) { $Script:ConfigPath = [IO.Path]::GetFullPath($ConfigFile) }
@@ -37,6 +37,8 @@ $Script:GenitalTool = Join-Path $Script:Root 'tools\bdo_meta\genital_pack_apply.
 $Script:GenitalRoot = Join-Path $Script:Root 'tools\genital_packs'
 $Script:GameOptionTool = Join-Path $Script:Root 'tools\bdo_meta\gameoption_patcher.py'
 $Script:PazStatusTool = Join-Path $Script:Root 'tools\bdo_meta\paz_status_scan.py'
+$Script:OpenChestTool = Join-Path $Script:Root 'tools\bdo_meta\open_chest_apply.py'
+$Script:OpenChestRegistry = Join-Path $Script:Root 'tools\bdo_meta\open_chest_registry.json'
 $Script:InjectStageTool = Join-Path $Script:Root 'tools\bdo_meta\inject_stage_builder.py'
 $Script:PythonExe = $PythonPath
 $Script:DefaultHeishaRoot = Join-Path $Script:Root 'heisha'
@@ -421,6 +423,7 @@ function Load-Config {
             pubicHairReuse  = $false
             pubicHairClasses = ''
             censorshipTier  = 'off'
+            openChestUncut  = 'off'
             female3dVagina  = $false
             genitalFemaleClasses = ''
             genitalReuse    = $false
@@ -436,7 +439,7 @@ function Load-Config {
             lastRun         = $null
         }
     }
-    foreach ($p in @('pazFolder', 'gender', 'armor', 'xyzwCollections', 'npiPath', 'bodySizeSchema', 'bodySizePreset', 'bodySizeParts', 'hideGloves', 'hideBoots', 'hideHelmets', 'hideWeapons', 'hideStockings', 'slotHideClasses', 'pubicHairStyle', 'pubicHairStyles', 'pubicHairReuse', 'pubicHairClasses', 'censorshipTier', 'female3dVagina', 'genitalFemaleClasses', 'genitalReuse', 'malePenisMode', 'penisWarrior', 'penisBerserker', 'penisMusa', 'penisWizard', 'penisNinja', 'penisStriker', 'heishaRoot', 'lastMetaVersion', 'lastRun')) {
+    foreach ($p in @('pazFolder', 'gender', 'armor', 'xyzwCollections', 'npiPath', 'bodySizeSchema', 'bodySizePreset', 'bodySizeParts', 'hideGloves', 'hideBoots', 'hideHelmets', 'hideWeapons', 'hideStockings', 'slotHideClasses', 'pubicHairStyle', 'pubicHairStyles', 'pubicHairReuse', 'pubicHairClasses', 'censorshipTier', 'openChestUncut', 'female3dVagina', 'genitalFemaleClasses', 'genitalReuse', 'malePenisMode', 'penisWarrior', 'penisBerserker', 'penisMusa', 'penisWizard', 'penisNinja', 'penisStriker', 'heishaRoot', 'lastMetaVersion', 'lastRun')) {
         if (-not ($Script:Config.PSObject.Properties.Name -contains $p)) {
             $val = switch ($p) {
                 'gender' { 'F' }
@@ -456,6 +459,7 @@ function Load-Config {
                 'pubicHairReuse' { $false }
                 'pubicHairClasses' { '' }
                 'censorshipTier' { 'off' }
+                'openChestUncut' { 'off' }
                 'female3dVagina' { $false }
                 'genitalFemaleClasses' { '' }
                 'genitalReuse' { $false }
@@ -476,6 +480,7 @@ function Load-Config {
             Add-Member -InputObject $Script:Config -NotePropertyName $p -NotePropertyValue $val
         }
     }
+    if ([string]$Script:Config.openChestUncut -notin @('off', 'open', 'window')) { $Script:Config.openChestUncut = 'off' }
     Update-BodySizeConfig
 }
 
@@ -593,6 +598,7 @@ function Save-Config {
         pubicHairReuse  = [bool]$Script:Config.pubicHairReuse
         pubicHairClasses = [string]$Script:Config.pubicHairClasses
         censorshipTier  = [string]$Script:Config.censorshipTier
+        openChestUncut  = [string]$Script:Config.openChestUncut
         female3dVagina  = [bool]$Script:Config.female3dVagina
         genitalFemaleClasses = [string]$Script:Config.genitalFemaleClasses
         genitalReuse    = [bool]$Script:Config.genitalReuse
@@ -1100,6 +1106,7 @@ function Configure-ModChoices {
     Write-Host '   [6] Pubic hair style  [RESTORED = native bins only by default]' -ForegroundColor Green
     Write-Host '   [7] Apply pubic hair now' -ForegroundColor Green
     Write-Host '   [C] Censorship tier presets  [RESTORED / old outfit textures]' -ForegroundColor Green
+    Write-Host '   [U] Open-chest outfits (body shows through cleavage tops)  [MODERN]' -ForegroundColor Cyan
     Write-Host '   [V] Penis / 3D vagina  [RESTORED = authored meshes only]' -ForegroundColor Green
     Write-Host ''
 
@@ -1120,11 +1127,34 @@ function Configure-ModChoices {
         '6' { Configure-PubicHair }
         '7' { Apply-PubicHair }
         'C' { Configure-CensorshipTier }
+        'U' { Configure-OpenChestUncut }
         'V' { Configure-GenitalMenus }
         'X' { Show-ExperimentalDlssMenu }
         '8' { Show-OptionsMatrix }
         default { return }
     }
+}
+
+function Configure-OpenChestUncut {
+    Write-Banner
+    Write-Host '  OPEN-CHEST OUTFITS' -ForegroundColor Magenta
+    Write-Host '  ------------------' -ForegroundColor DarkGray
+    Write-Info 'Vanilla part cuts hide the body under EVERY top, so an outfit with a cleavage'
+    Write-Info 'opening shows a seam where the breast should be. This uncuts the body under only'
+    Write-Info 'the tops whose mesh leaves the chest open (found by mesh analysis); every other'
+    Write-Info 'top keeps its vanilla cut. Outfits Midnight already stages are never touched.'
+    Write-Warn 'Applied automatically after PartCutGen, before Meta Injector. Outfits added by'
+    Write-Warn 'later client patches keep the vanilla cut until the list is refreshed.'
+    Write-Host ''
+    Write-Host '    [0] Off' -ForegroundColor DarkGray
+    Write-Host '    [1] Open tops only   - the chest is essentially bare; nothing can clip' -ForegroundColor Green
+    Write-Host '    [2] + cleavage windows - slits / plunges too; breasts at extreme sliders' -ForegroundColor Yellow
+    Write-Host '                            can poke through the part of the top that stays' -ForegroundColor DarkYellow
+    $t = Read-Choice 'Mode' @('0', '1', '2')
+    $Script:Config.openChestUncut = switch ($t) { '0' { 'off' } '1' { 'open' } '2' { 'window' } }
+    Save-Config
+    Write-Ok ("Open-chest outfits: " + $Script:Config.openChestUncut + ". Takes effect on the next PartCutGen run.")
+    Pause-Any
 }
 
 function Configure-CensorshipTier {
@@ -2136,6 +2166,18 @@ function Deploy-Midnight {
     return $true
 }
 
+function Invoke-OpenChestUncut {
+    # Runs on the XML PartCutGen just wrote; PartCutGen regenerates it, so this must follow every run.
+    $mode = [string]$Script:Config.openChestUncut
+    if ($mode -notin @('open', 'window')) { return $true }
+    foreach ($need in @($Script:OpenChestTool, $Script:OpenChestRegistry)) {
+        if (-not (Test-Path -LiteralPath $need -PathType Leaf)) { Write-Err ("Missing " + $need); return $false }
+    }
+    if (-not (Ensure-Python)) { return $false }
+    Write-Info ("Open-chest outfits (" + $mode + "): uncutting the body under cleavage tops...")
+    return (Invoke-BdoPythonChecked -Arguments @($Script:OpenChestTool, '--paz', [string]$Script:Config.pazFolder, '--registry', $Script:OpenChestRegistry, '--tier', $mode) -Label 'Open-chest uncut')
+}
+
 function Run-PartCutGen {
     Write-Banner
     Write-Host '  PartCutGen - rebuild part-cut exclusions' -ForegroundColor White
@@ -2156,7 +2198,10 @@ function Run-PartCutGen {
         if (-not (Test-Path -LiteralPath $output -PathType Leaf)) { throw 'PartCutGen produced no partcutdesc.xml. Do not inject.' }
         # Exit zero alone cannot distinguish generation from choosing Quit.
         $ok = Read-YesNo 'Did PartCutGen report successful generation (no error)?' $false
-        if ($ok) { Write-Ok 'PartCutGen finished; you can proceed to injection.' }
+        if ($ok -and -not (Invoke-OpenChestUncut)) {
+            $ok = $false
+            Write-Warn 'Apply stopped before injection. Fix the open-chest step or set Open-chest outfits to Off, then run PartCutGen again.'
+        } elseif ($ok) { Write-Ok 'PartCutGen finished; you can proceed to injection.' }
         else { Write-Warn 'Apply stopped before injection. Check the PartCutGen output.' }
     } catch { Write-Err $_.Exception.Message }
     Pause-Any
@@ -2376,6 +2421,7 @@ function Apply-AllRestoredChoices {
     Write-Host ("    slot classes   = " + $(if ($Script:Config.slotHideClasses) { $Script:Config.slotHideClasses } else { 'ALL' })) -ForegroundColor Gray
     Write-Host ("    pubic          = " + $(if (Get-PubicStylesArg) { Get-PubicStylesArg } else { 'none' })) -ForegroundColor Gray
     Write-Host ("    censorship     = " + $Script:Config.censorshipTier) -ForegroundColor Gray
+    Write-Host ("    open chest     = " + $Script:Config.openChestUncut + "  (applied after PartCutGen)") -ForegroundColor Gray
     Write-Host ("    female3d       = " + $Script:Config.female3dVagina) -ForegroundColor Gray
     Write-Host ("    malePenisMode  = " + $Script:Config.malePenisMode) -ForegroundColor Gray
     Write-Host ''
