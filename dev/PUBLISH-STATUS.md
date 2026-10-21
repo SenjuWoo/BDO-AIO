@@ -10,7 +10,7 @@
 
 | Channel | URL | Status |
 |---------|-----|--------|
-| **GitHub** | https://github.com/ShugokiFable/BDO-AIO/releases/tag/v2.4.1 | Primary download |
+| **GitHub** | https://github.com/SenjuWoo/BDO-AIO/releases/tag/v2.4.1 | Primary download |
 | **LoversLab** | https://www.loverslab.com/files/file/50558-bdo-aio-—-midnight-nudehide-meta-injector-wizard-black-desert-online/ | Upload full.7z manually (see docs/LOVERSLAB-RESOURCE.md) |
 | **Undertow** | https://www.undertow.club/downloads/bdo-aio-—-midnight-nude-hide-meta-injector-wizard.9468/ | Upload full.7z manually (see docs/UNDERTOW-RESOURCE.md) |
 
@@ -44,7 +44,7 @@ explicit user runtime test and is not claimed as automated proof.
 |------|-------|
 | Tag | `v2.4.2` on commit `27c474c` |
 | CI on that SHA | green (PowerShell + PSScriptAnalyzer, JSON + Python) |
-| Release | https://github.com/ShugokiFable/BDO-AIO/releases/tag/v2.4.2 |
+| Release | https://github.com/SenjuWoo/BDO-AIO/releases/tag/v2.4.2 |
 | Asset | `BDO-AIO-v2.4.2-full.7z` - 207,272,976 bytes, 42,146 files |
 | sha256 | `d95e54464a4f3a93917e63e2732d54d7f0db9f51b066065896d84cd6491b6cfd` |
 | Verified | built / published / `.sha256` all agree; archive passes `7z t` |
