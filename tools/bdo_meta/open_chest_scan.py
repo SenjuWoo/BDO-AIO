@@ -9,7 +9,9 @@ Re-run after a client patch to pick up new outfits; unlisted outfits keep vanill
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
+import os
 import pathlib
 import shutil
 import sys
@@ -74,20 +76,41 @@ def scan_class(paz, ice, blocks, prefix: str, folder_id: str) -> dict:
     }
 
 
+def dump_registry(reg: dict) -> str:
+    """Stable, diff-friendly JSON: classes sorted, one outfit per line, classes with nothing recorded dropped."""
+    lines = ["{", f' "schema": {reg["schema"]},', f' "client_version": {reg["client_version"]},', ' "classes": {']
+    classes = [(p, c) for p, c in sorted(reg["classes"].items()) if c["items"]]
+    for ci, (prefix, c) in enumerate(classes):
+        lines += [f' "{prefix}": {{', f'  "folder": {json.dumps(c["folder"])},', f'  "tops": {c["tops"]},', '  "items": {']
+        rows = [f'   {json.dumps(k)}: {json.dumps(v)}' for k, v in c["items"].items()]
+        lines += [r + ("," if i < len(rows) - 1 else "") for i, r in enumerate(rows)]
+        lines += ["  }", " }" + ("," if ci < len(classes) - 1 else "")]
+    return "\n".join(lines + [" }", "}"]) + "\n"
+
+
+def _scan_job(args):
+    # Runs in a worker process: the ICE handle and 870k-block list cannot be shared, so each loads its own.
+    paz, meta_name, prefix, folder_id = args
+    ice = IceDecipher(pathlib.Path(__file__).resolve().parent / "ice_decipher.dll")
+    t0 = time.time()
+    res = scan_class(paz, ice, load_blocks(paz, meta_name, ice), prefix, folder_id)
+    return prefix, res, time.time() - t0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--paz", required=True)
     ap.add_argument("--meta", default=None, help=f"meta to read (default: {AIO_BACKUP_NAME} if present, else pad00000.meta)")
     ap.add_argument("--classes", default="", help="comma list of prefixes (default: all)")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--jobs", type=int, default=min(4, os.cpu_count() or 1),
+                    help="worker processes, ~1.5 GB RAM each (default: min(4, cpus))")
     args = ap.parse_args()
 
     paz = pathlib.Path(args.paz)
     meta_name = args.meta or (AIO_BACKUP_NAME if (paz / AIO_BACKUP_NAME).is_file() else "pad00000.meta")
     if not (paz / meta_name).is_file():
         raise SystemExit(f"[FATAL] meta not found: {paz / meta_name}")
-    ice = IceDecipher(pathlib.Path(__file__).resolve().parent / "ice_decipher.dll")
-    blocks = load_blocks(paz, meta_name, ice)
 
     # Shai is excluded upstream; Tamer is excluded here: her lore has her growing up as a small
     # child and her model reads childlike, so she is treated as age-ambiguous for this feature.
@@ -95,15 +118,15 @@ def main() -> int:
     classes.update(EXTRA_CLASSES)
     want = {c.strip().lower() for c in args.classes.split(",") if c.strip()}
     out = {"schema": SCHEMA, "client_version": meta_version(paz / meta_name), "classes": {}}
-    for prefix, folder_id in classes.items():
-        if want and prefix not in want:
-            continue
-        t0 = time.time()
-        res = scan_class(paz, ice, blocks, prefix, folder_id)
-        out["classes"][prefix] = res
-        log(f"  {prefix:5s} tops={res.get('tops', 0):4d} open>=0.15: {len(res['items']):3d}  "
-            f"unreadable={res.get('unreadable', 0)} {res.get('skipped', '')} ({time.time() - t0:.0f}s)")
-    pathlib.Path(args.out).write_text(json.dumps(out, indent=1) + "\n", "utf-8")
+    jobs = [(paz, meta_name, p, f) for p, f in classes.items() if not want or p in want]
+    results = {}
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max(1, args.jobs)) as pool:
+        for prefix, res, secs in pool.map(_scan_job, jobs):
+            results[prefix] = res
+            log(f"  {prefix:5s} tops={res.get('tops', 0):4d} open>=0.15: {len(res['items']):3d}  "
+                f"unreadable={res.get('unreadable', 0)} {res.get('skipped', '')} ({secs:.0f}s)")
+    out["classes"] = results  # pool.map yields in submission order, so the JSON order matches a serial run
+    pathlib.Path(args.out).write_bytes(dump_registry(out).encode("utf-8"))
     log(f"wrote {args.out} (client {out['client_version']})")
     return 0
 

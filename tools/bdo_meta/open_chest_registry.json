@@ -1,10 +1,10 @@
 {
-"schema": 1,
-"client_version": 3454,
-"classes": {
+ "schema": 1,
+ "client_version": 3474,
+ "classes": {
  "pcw": {
   "folder": "1_Pc/16_pcw/Armor/9_Upperbody",
-  "tops": 301,
+  "tops": 307,
   "items": {
    "pcw_00_ub_0031": {"mound": 0.929, "nipple": 0.99},
    "pcw_00_ub_0033": {"mound": 0.305, "nipple": 0.225},
@@ -87,6 +87,8 @@
    "pcw_10_ub_0108": {"mound": 0.995, "nipple": 1.0},
    "pcw_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pcw_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pcw_10_ub_0112": {"mound": 0.338, "nipple": 0.111},
+   "pcw_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.11},
    "pcw_10_ub_0205": {"mound": 0.547, "nipple": 0.827},
    "pcw_10_ub_0334": {"mound": 0.49, "nipple": 0.579},
    "pcw_10_ub_0334_ef1": {"mound": 0.49, "nipple": 0.579},
@@ -98,7 +100,7 @@
  },
  "pdkl": {
   "folder": "1_Pc/33_pdkl/Armor/9_Upperbody",
-  "tops": 179,
+  "tops": 185,
   "items": {
    "pdkl_00_ub_0001": {"mound": 0.933, "nipple": 1.0},
    "pdkl_00_ub_0033": {"mound": 0.307, "nipple": 0.225},
@@ -134,12 +136,19 @@
    "pdkl_10_ub_0089_a4_w": {"mound": 0.951, "nipple": 1.0},
    "pdkl_10_ub_0097_a1": {"mound": 0.434, "nipple": 0.091},
    "pdkl_10_ub_0097_b1": {"mound": 0.434, "nipple": 0.091},
+   "pdkl_10_ub_0098_a1": {"mound": 1.0, "nipple": 1.0},
+   "pdkl_10_ub_0098_a2": {"mound": 1.0, "nipple": 1.0},
+   "pdkl_10_ub_0098_b1": {"mound": 1.0, "nipple": 1.0},
+   "pdkl_10_ub_0098_b2": {"mound": 1.0, "nipple": 1.0},
    "pdkl_10_ub_0100_b1": {"mound": 1.0, "nipple": 1.0},
    "pdkl_10_ub_0103": {"mound": 1.0, "nipple": 1.0},
    "pdkl_10_ub_0105": {"mound": 0.978, "nipple": 1.0},
    "pdkl_10_ub_0107": {"mound": 0.523, "nipple": 0.048},
+   "pdkl_10_ub_0108": {"mound": 0.995, "nipple": 1.0},
    "pdkl_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pdkl_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pdkl_10_ub_0112": {"mound": 0.337, "nipple": 0.108},
+   "pdkl_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.108},
    "pdkl_10_ub_0205": {"mound": 0.542, "nipple": 0.827},
    "pdkl_10_ub_0334": {"mound": 0.491, "nipple": 0.582},
    "pdkl_10_ub_0334_ef1": {"mound": 0.491, "nipple": 0.582},
@@ -152,7 +161,7 @@
  },
  "pdw": {
   "folder": "1_Pc/15_pdw/Armor/9_Upperbody",
-  "tops": 598,
+  "tops": 605,
   "items": {
    "pdw_00_ub_0002": {"mound": 0.407, "nipple": 0.476},
    "pdw_00_ub_0002_01": {"mound": 0.407, "nipple": 0.476},
@@ -404,6 +413,8 @@
    "pdw_10_ub_0108_mul_na": {"mound": 0.994, "nipple": 1.0},
    "pdw_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pdw_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pdw_10_ub_0112": {"mound": 0.337, "nipple": 0.109},
+   "pdw_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.109},
    "pdw_10_ub_0205": {"mound": 0.538, "nipple": 0.824},
    "pdw_10_ub_0205_mul": {"mound": 0.535, "nipple": 0.824},
    "pdw_10_ub_0205_mul_na": {"mound": 0.535, "nipple": 0.824},
@@ -426,7 +437,7 @@
  },
  "pew": {
   "folder": "1_Pc/3_pew/Armor/9_Upperbody",
-  "tops": 352,
+  "tops": 358,
   "items": {
    "pew_00_ub_0009_01": {"mound": 0.211, "nipple": 0.032},
    "pew_00_ub_0030": {"mound": 0.177, "nipple": 0.026},
@@ -515,6 +526,8 @@
    "pew_10_ub_0108": {"mound": 0.996, "nipple": 1.0},
    "pew_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pew_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pew_10_ub_0112": {"mound": 0.33, "nipple": 0.092},
+   "pew_10_ub_0112_b1": {"mound": 0.33, "nipple": 0.092},
    "pew_10_ub_0205": {"mound": 0.562, "nipple": 0.816},
    "pew_10_ub_0210": {"mound": 0.161, "nipple": 0.014},
    "pew_10_ub_0216": {"mound": 0.216, "nipple": 0.166},
@@ -531,7 +544,7 @@
  },
  "pfw": {
   "folder": "1_Pc/24_pfw/Armor/9_Upperbody",
-  "tops": 266,
+  "tops": 272,
   "items": {
    "pfw_00_ub_0001": {"mound": 0.559, "nipple": 0.438},
    "pfw_00_ub_0250": {"mound": 0.183, "nipple": 0.0},
@@ -599,6 +612,8 @@
    "pfw_10_ub_0108": {"mound": 0.995, "nipple": 1.0},
    "pfw_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pfw_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pfw_10_ub_0112": {"mound": 0.337, "nipple": 0.108},
+   "pfw_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.108},
    "pfw_10_ub_0205": {"mound": 0.541, "nipple": 0.827},
    "pfw_10_ub_0334": {"mound": 0.486, "nipple": 0.569},
    "pfw_10_ub_0334_ef1": {"mound": 0.486, "nipple": 0.569},
@@ -612,7 +627,7 @@
  },
  "pgw": {
   "folder": "1_Pc/11_pgw/Armor/9_Upperbody",
-  "tops": 269,
+  "tops": 275,
   "items": {
    "pgw_00_ub_0001": {"mound": 0.288, "nipple": 0.021},
    "pgw_00_ub_0002": {"mound": 0.178, "nipple": 0.033},
@@ -634,6 +649,8 @@
    "pgw_10_ub_0025": {"mound": 0.185, "nipple": 0.021},
    "pgw_10_ub_0040": {"mound": 0.268, "nipple": 0.175},
    "pgw_10_ub_0040_01": {"mound": 0.268, "nipple": 0.175},
+   "pgw_10_ub_0045": {"mound": 0.194, "nipple": 0.041},
+   "pgw_10_ub_0045_01": {"mound": 0.336, "nipple": 0.041},
    "pgw_10_ub_0045_02": {"mound": 0.336, "nipple": 0.041},
    "pgw_10_ub_0047": {"mound": 0.277, "nipple": 0.0},
    "pgw_10_ub_0052": {"mound": 0.436, "nipple": 0.158},
@@ -681,7 +698,10 @@
    "pgw_10_ub_0105": {"mound": 0.981, "nipple": 1.0},
    "pgw_10_ub_0107": {"mound": 0.444, "nipple": 0.044},
    "pgw_10_ub_0108": {"mound": 0.995, "nipple": 1.0},
+   "pgw_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pgw_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pgw_10_ub_0112": {"mound": 0.311, "nipple": 0.095},
+   "pgw_10_ub_0112_b1": {"mound": 0.311, "nipple": 0.095},
    "pgw_10_ub_0205": {"mound": 0.615, "nipple": 0.82},
    "pgw_10_ub_0334": {"mound": 0.474, "nipple": 0.46},
    "pgw_10_ub_0334_ef1": {"mound": 0.474, "nipple": 0.46},
@@ -693,7 +713,7 @@
  },
  "phw": {
   "folder": "1_Pc/2_phw/Armor/9_Upperbody",
-  "tops": 361,
+  "tops": 367,
   "items": {
    "phw_00_ub_0001": {"mound": 0.158, "nipple": 0.0},
    "phw_00_ub_0002": {"mound": 0.383, "nipple": 0.184},
@@ -793,6 +813,8 @@
    "phw_10_ub_0108": {"mound": 0.995, "nipple": 1.0},
    "phw_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "phw_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "phw_10_ub_0112": {"mound": 0.336, "nipple": 0.113},
+   "phw_10_ub_0112_b1": {"mound": 0.336, "nipple": 0.113},
    "phw_10_ub_0205": {"mound": 0.543, "nipple": 0.211},
    "phw_10_ub_0334": {"mound": 0.492, "nipple": 0.581},
    "phw_10_ub_0334_ef1": {"mound": 0.492, "nipple": 0.581},
@@ -807,7 +829,7 @@
  },
  "pkow": {
   "folder": "1_Pc/27_pkow/Armor/9_Upperbody",
-  "tops": 252,
+  "tops": 258,
   "items": {
    "pkow_00_ub_0001": {"mound": 1.0, "nipple": 1.0},
    "pkow_00_ub_0002": {"mound": 0.972, "nipple": 1.0},
@@ -875,6 +897,8 @@
    "pkow_10_ub_0108": {"mound": 0.995, "nipple": 1.0},
    "pkow_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pkow_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pkow_10_ub_0112": {"mound": 0.337, "nipple": 0.108},
+   "pkow_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.108},
    "pkow_10_ub_0205": {"mound": 0.54, "nipple": 0.826},
    "pkow_10_ub_0334": {"mound": 0.491, "nipple": 0.582},
    "pkow_10_ub_0334_ef1": {"mound": 0.491, "nipple": 0.582},
@@ -886,7 +910,7 @@
  },
  "pkww": {
   "folder": "1_Pc/22_pkww/Armor/9_Upperbody",
-  "tops": 334,
+  "tops": 340,
   "items": {
    "pkww_00_ub_0001": {"mound": 0.927, "nipple": 1.0},
    "pkww_00_ub_0040": {"mound": 0.28, "nipple": 0.194},
@@ -965,6 +989,8 @@
    "pkww_10_ub_0108": {"mound": 0.995, "nipple": 1.0},
    "pkww_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pkww_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pkww_10_ub_0112": {"mound": 0.337, "nipple": 0.111},
+   "pkww_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.111},
    "pkww_10_ub_0205": {"mound": 0.545, "nipple": 0.827},
    "pkww_10_ub_0334": {"mound": 0.489, "nipple": 0.579},
    "pkww_10_ub_0334_ef1": {"mound": 0.489, "nipple": 0.579},
@@ -982,7 +1008,7 @@
  },
  "pmyf": {
   "folder": "1_Pc/28_pmyf/Armor/9_Upperbody",
-  "tops": 258,
+  "tops": 264,
   "items": {
    "pmyf_00_ub_0001": {"mound": 1.0, "nipple": 1.0},
    "pmyf_00_ub_0002": {"mound": 0.343, "nipple": 0.104},
@@ -1052,6 +1078,8 @@
    "pmyf_10_ub_0108": {"mound": 0.995, "nipple": 1.0},
    "pmyf_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pmyf_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pmyf_10_ub_0112": {"mound": 0.337, "nipple": 0.108},
+   "pmyf_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.108},
    "pmyf_10_ub_0205": {"mound": 0.54, "nipple": 0.826},
    "pmyf_10_ub_0334": {"mound": 0.491, "nipple": 0.582},
    "pmyf_10_ub_0334_ef1": {"mound": 0.491, "nipple": 0.582},
@@ -1064,7 +1092,7 @@
  },
  "pnw": {
   "folder": "1_Pc/13_pnw/Armor/9_Upperbody",
-  "tops": 339,
+  "tops": 345,
   "items": {
    "pnw_00_ub_0040": {"mound": 0.285, "nipple": 0.192},
    "pnw_00_ub_0052": {"mound": 0.221, "nipple": 0.068},
@@ -1091,6 +1119,8 @@
    "pnw_10_ub_0033": {"mound": 0.667, "nipple": 0.83},
    "pnw_10_ub_0040": {"mound": 0.303, "nipple": 0.26},
    "pnw_10_ub_0040_01": {"mound": 0.303, "nipple": 0.26},
+   "pnw_10_ub_0045": {"mound": 0.198, "nipple": 0.033},
+   "pnw_10_ub_0045_01": {"mound": 0.405, "nipple": 0.033},
    "pnw_10_ub_0045_02": {"mound": 0.405, "nipple": 0.033},
    "pnw_10_ub_0047": {"mound": 0.289, "nipple": 0.0},
    "pnw_10_ub_0052": {"mound": 0.497, "nipple": 0.201},
@@ -1142,6 +1172,8 @@
    "pnw_10_ub_0108": {"mound": 0.994, "nipple": 1.0},
    "pnw_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pnw_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pnw_10_ub_0112": {"mound": 0.337, "nipple": 0.109},
+   "pnw_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.109},
    "pnw_10_ub_0205": {"mound": 0.537, "nipple": 0.824},
    "pnw_10_ub_0216": {"mound": 0.218, "nipple": 0.147},
    "pnw_10_ub_0334": {"mound": 0.486, "nipple": 0.573},
@@ -1156,7 +1188,7 @@
  },
  "pnyw": {
   "folder": "1_Pc/29_pnyw/Armor/9_Upperbody",
-  "tops": 229,
+  "tops": 235,
   "items": {
    "pnyw_00_ub_0001": {"mound": 0.924, "nipple": 1.0},
    "pnyw_00_ub_0033": {"mound": 0.307, "nipple": 0.225},
@@ -1226,6 +1258,8 @@
    "pnyw_10_ub_0108": {"mound": 0.995, "nipple": 1.0},
    "pnyw_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pnyw_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pnyw_10_ub_0112": {"mound": 0.337, "nipple": 0.108},
+   "pnyw_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.108},
    "pnyw_10_ub_0205": {"mound": 0.547, "nipple": 0.825},
    "pnyw_10_ub_0334": {"mound": 0.491, "nipple": 0.582},
    "pnyw_10_ub_0334_ef1": {"mound": 0.491, "nipple": 0.582},
@@ -1235,7 +1269,7 @@
  },
  "ppw": {
   "folder": "1_Pc/21_ppw/Armor/9_Upperbody",
-  "tops": 577,
+  "tops": 584,
   "items": {
    "ppw_00_ub_0002": {"mound": 0.296, "nipple": 0.195},
    "ppw_00_ub_0033": {"mound": 0.306, "nipple": 0.224},
@@ -1450,6 +1484,8 @@
    "ppw_10_ub_0108_mul_na": {"mound": 0.995, "nipple": 1.0},
    "ppw_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "ppw_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "ppw_10_ub_0112": {"mound": 0.337, "nipple": 0.108},
+   "ppw_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.108},
    "ppw_10_ub_0205": {"mound": 0.552, "nipple": 0.827},
    "ppw_10_ub_0205_mul": {"mound": 0.552, "nipple": 0.827},
    "ppw_10_ub_0205_mul_na": {"mound": 0.552, "nipple": 0.827},
@@ -1473,7 +1509,7 @@
  },
  "pqw": {
   "folder": "1_Pc/25_pqw/Armor/9_Upperbody",
-  "tops": 251,
+  "tops": 257,
   "items": {
    "pqw_00_ub_0001": {"mound": 0.375, "nipple": 0.033},
    "pqw_00_ub_0002": {"mound": 0.743, "nipple": 0.677},
@@ -1542,6 +1578,8 @@
    "pqw_10_ub_0108": {"mound": 0.995, "nipple": 1.0},
    "pqw_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pqw_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pqw_10_ub_0112": {"mound": 0.337, "nipple": 0.108},
+   "pqw_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.108},
    "pqw_10_ub_0205": {"mound": 0.541, "nipple": 0.827},
    "pqw_10_ub_0216": {"mound": 0.213, "nipple": 0.141},
    "pqw_10_ub_0334": {"mound": 0.491, "nipple": 0.582},
@@ -1553,7 +1591,7 @@
  },
  "psw": {
   "folder": "1_Pc/17_psw/Armor/9_Upperbody",
-  "tops": 523,
+  "tops": 530,
   "items": {
    "psw_00_ub_0003": {"mound": 0.297, "nipple": 0.0},
    "psw_00_ub_0003_mul": {"mound": 0.297, "nipple": 0.0},
@@ -1756,6 +1794,8 @@
    "psw_10_ub_0108_mul_na": {"mound": 0.994, "nipple": 1.0},
    "psw_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "psw_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "psw_10_ub_0112": {"mound": 0.337, "nipple": 0.109},
+   "psw_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.109},
    "psw_10_ub_0205": {"mound": 0.535, "nipple": 0.824},
    "psw_10_ub_0205_mul": {"mound": 0.535, "nipple": 0.824},
    "psw_10_ub_0205_mul_na": {"mound": 0.535, "nipple": 0.824},
@@ -1780,7 +1820,7 @@
  },
  "pvw": {
   "folder": "1_Pc/7_pvw/Armor/9_Upperbody",
-  "tops": 366,
+  "tops": 372,
   "items": {
    "pvw_00_ub_0002": {"mound": 0.73, "nipple": 1.0},
    "pvw_00_ub_0003": {"mound": 0.166, "nipple": 0.0},
@@ -1867,6 +1907,8 @@
    "pvw_10_ub_0108": {"mound": 0.994, "nipple": 1.0},
    "pvw_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pvw_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pvw_10_ub_0112": {"mound": 0.337, "nipple": 0.109},
+   "pvw_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.109},
    "pvw_10_ub_0205": {"mound": 0.539, "nipple": 0.824},
    "pvw_10_ub_0334": {"mound": 0.486, "nipple": 0.573},
    "pvw_10_ub_0334_ef1": {"mound": 0.486, "nipple": 0.573},
@@ -1886,7 +1928,7 @@
  },
  "pwge": {
   "folder": "1_Pc/32_pwge/Armor/9_Upperbody",
-  "tops": 201,
+  "tops": 207,
   "items": {
    "pwge_00_ub_0001": {"mound": 1.0, "nipple": 1.0},
    "pwge_00_ub_0033": {"mound": 0.308, "nipple": 0.225},
@@ -1938,6 +1980,8 @@
    "pwge_10_ub_0108": {"mound": 0.995, "nipple": 1.0},
    "pwge_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pwge_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pwge_10_ub_0112": {"mound": 0.337, "nipple": 0.108},
+   "pwge_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.108},
    "pwge_10_ub_0205": {"mound": 0.543, "nipple": 0.827},
    "pwge_10_ub_0216": {"mound": 0.224, "nipple": 0.158},
    "pwge_10_ub_0334": {"mound": 0.491, "nipple": 0.582},
@@ -1949,7 +1993,7 @@
  },
  "pww": {
   "folder": "1_Pc/8_pww/Armor/9_Upperbody",
-  "tops": 343,
+  "tops": 349,
   "items": {
    "pww_00_ub_0040": {"mound": 0.285, "nipple": 0.192},
    "pww_00_ub_0052": {"mound": 0.221, "nipple": 0.068},
@@ -2026,8 +2070,11 @@
    "pww_10_ub_0103": {"mound": 1.0, "nipple": 1.0},
    "pww_10_ub_0105": {"mound": 0.978, "nipple": 1.0},
    "pww_10_ub_0107": {"mound": 0.525, "nipple": 0.05},
+   "pww_10_ub_0108": {"mound": 0.994, "nipple": 1.0},
    "pww_10_ub_0109": {"mound": 1.0, "nipple": 1.0},
    "pww_10_ub_0110": {"mound": 1.0, "nipple": 1.0},
+   "pww_10_ub_0112": {"mound": 0.337, "nipple": 0.109},
+   "pww_10_ub_0112_b1": {"mound": 0.337, "nipple": 0.109},
    "pww_10_ub_0205": {"mound": 0.535, "nipple": 0.824},
    "pww_10_ub_0216": {"mound": 0.218, "nipple": 0.147},
    "pww_10_ub_0334": {"mound": 0.486, "nipple": 0.573},
@@ -2045,5 +2092,5 @@
    "pww_sd_ub_0001_02_01": {"mound": 0.277, "nipple": 0.201}
   }
  }
-}
+ }
 }

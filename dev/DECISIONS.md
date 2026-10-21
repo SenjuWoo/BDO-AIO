@@ -82,5 +82,5 @@ do: a native `.pac` reader plus a front-view coverage measure separates bare/win
 from closed ones, validated against PACtool and on contact sheets.
 
 **Scope limits:** Tamer and Shai excluded (age-ambiguous / childlike); texture-alpha windows
-and event-costume PACs not handled; list tied to client 3454 and refreshable with
+and event-costume PACs not handled; list tied to client 3474 (rescanned 2026-10-21; 3454 -> 3474 added 47 tops, removed none) and refreshable with
 `open_chest_scan.py`. No in-game proof yet.

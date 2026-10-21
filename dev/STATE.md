@@ -1,5 +1,21 @@
 # BDO-AIO state
 
+## 2026-10-21 - resume after session wipe; client patched to 3474
+
+- Recovered from disk + git (BleachBit had wiped Claude sessions; Codex backup is older than disk).
+  The repo now lives at `BDO-AIO\BDO-AIO-git-push` (moved 2026-10-15); `BDO-AIO` is the installed copy.
+- Game client is **3474** (patched 2026-10-16). Live `pad00000.meta` is stock 3474 (mods not live);
+  `pad00000.BDOAIO-VANILLA.meta` is a stale 3454 snapshot (the injector's `backup` step re-snapshots);
+  `files_to_patch` still holds 3454-era stages, which Apply-all rebuilds from the current PAZ.
+- `open_chest_registry.json` rescanned on 3474: +47 tops, none removed, no score changed. Serial and
+  4-job scans are byte-identical; scan time 16 min -> ~5 min (`--jobs`, default 4).
+- `open_chest_apply.py` now warns when the registry client differs from the installed client.
+  Dry-run against the live 3474 meta passed for every class (no game file written).
+- Pipeline timing (logs/meta-inject-*.json): Meta Injector is ~152-157 s of ~160 s; our backup, stage
+  build and verify total ~10 s, so there is no meaningful launcher-side speedup left.
+- Unverified: newer Meta Injector / PartCutGen / Midnight versions (search and Undertow page failed).
+- Gate unchanged: the user's in-game run (see 2026-10-13 below). Release stays gated on it.
+
 ## 2026-10-13 - open-chest outfits (2.6.0 development, branch `feat/open-chest-uncut`)
 
 Shelved per-outfit work resumed and implemented: see [OPEN-CHEST.md](OPEN-CHEST.md) and

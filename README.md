@@ -81,7 +81,7 @@ tops whose mesh leaves the chest open; every other top keeps its vanilla cut.
 - Bikini cups and narrow plunges cover the nipples, so they stay vanilla.
 - Off by default. It runs right after PartCutGen, before Meta Injector, and skips outfits
   Midnight already stages. Every female class except Tamer and Shai.
-- The shipped list matches client 3454. Outfits added by a later patch keep the vanilla cut until
+- The shipped list matches client 3474. Outfits added by a later patch keep the vanilla cut until
   the list is refreshed with `tools/bdo_meta/open_chest_scan.py` (needs numpy).
 - Not detected: windows made by texture transparency instead of missing geometry, and
   event-costume tops. Details and evidence: [`dev/OPEN-CHEST.md`](dev/OPEN-CHEST.md).

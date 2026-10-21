@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 
 try:
@@ -8,6 +9,7 @@ except ImportError:
     raise unittest.SkipTest("numpy not installed")
 
 from open_chest import BodyReference
+from open_chest_scan import dump_registry
 from pac_geometry import Mesh
 
 
@@ -54,6 +56,21 @@ class OpenChestTests(unittest.TestCase):
     def test_back_panel_does_not_count_as_cover(self) -> None:
         mound, _ = self.body.open_fractions([grid(-20, 20, 100, 180, 20.0, 1.0)])  # behind the body
         self.assertGreater(mound, 0.98)
+
+
+class RegistryDumpTests(unittest.TestCase):
+    def test_dump_round_trips_sorted_and_drops_empty_classes(self) -> None:
+        reg = {"schema": 1, "client_version": 9, "classes": {
+            "pzz": {"folder": "1_Pc/2_pzz/Armor/9_Upperbody", "tops": 3, "unreadable": 0,
+                    "items": {"pzz_00_ub_0001": {"mound": 0.5, "nipple": 0.25}}},
+            "paa": {"folder": "1_Pc/1_paa/Armor/9_Upperbody", "tops": 2, "items": {}, "skipped": "no nude body"},
+            "pbb": {"folder": "1_Pc/3_pbb/Armor/9_Upperbody", "tops": 4,
+                    "items": {"a": {"mound": 1.0, "nipple": 1.0}, "b": {"mound": 0.2, "nipple": 0.0}}},
+        }}
+        out = json.loads(dump_registry(reg))
+        self.assertEqual(list(out["classes"]), ["pbb", "pzz"])
+        self.assertEqual(out["classes"]["pbb"]["items"], reg["classes"]["pbb"]["items"])
+        self.assertEqual(out["client_version"], 9)
 
 
 if __name__ == "__main__":

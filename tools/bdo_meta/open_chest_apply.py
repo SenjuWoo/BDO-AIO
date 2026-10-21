@@ -27,6 +27,7 @@ import sys
 import tempfile
 
 from body_size_patcher import IceDecipher, MetaFile
+from vanilla_restore import meta_version
 
 BEGIN = "<!-- BDO-AIO open-chest BEGIN {group} -->"
 END = "<!-- BDO-AIO open-chest END {group} -->"
@@ -174,6 +175,11 @@ def main() -> int:
     staged = staged_tops(paz / "files_to_patch")
     changed, report = apply_file(xml_path, registry, args.tier, tops, staged, write=not args.dry_run)
     log(f"  tier={args.tier} registry client {registry.get('client_version')}")
+    live = meta_version(paz / meta_name)
+    if registry.get("client_version") != live:
+        # Tops added by a patch are absent from the registry and keep the vanilla cut (safe, not uncut).
+        log(f"  [!] registry was scanned on client {registry.get('client_version')}, game is {live}: "
+            "new outfits keep their vanilla cut until open_chest_scan.py is re-run")
     for prefix, info in report.items():
         if info["selected"]:
             note = f"  ({info['note']})" if "note" in info else ""

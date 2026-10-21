@@ -39,7 +39,8 @@ front-half triangles.
 scanned on (`client_version`). Tops added by a later patch are not in it and keep their
 vanilla cut: safe by default, just not uncut.
 
-Refresh after a patch (needs numpy; read-only on the game, writes only `--out`):
+Refresh after a patch (needs numpy; read-only on the game, writes only `--out`; classes scan in
+parallel, `--jobs N`, ~1.5 GB RAM each, default 4: about 5 minutes versus 16 serial on client 3474):
 
 ```bash
 python tools/bdo_meta/open_chest_scan.py --paz "<...>/Black Desert Online/PAZ" --out tools/bdo_meta/open_chest_registry.json

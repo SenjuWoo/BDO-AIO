@@ -7,11 +7,16 @@
 - Detection is geometric: a native `.pac` reader (checked against PACtool: 348 of 348 Ranger
   PACs identical) feeds a front-view coverage measure of each class's breast mound and
   nipple zone. Shipped list covers every female class except Tamer and Shai
-  (`tools/bdo_meta/open_chest_registry.json`, client 3454).
+  (`tools/bdo_meta/open_chest_registry.json`, client 3474).
 - Applied right after PartCutGen, before Meta Injector, group-aware (cut groups are shared
   between classes). Outfits staged by Midnight XYZW are skipped. Re-running is idempotent.
 - `open_chest_scan.py` regenerates the list after a client patch (needs numpy). Tops added
   by a patch keep the vanilla cut until then.
+- The open-chest step now warns when the shipped list was scanned on an older client than the
+  one installed (new outfits keep the vanilla cut until the list is refreshed). The list is
+  rescanned on client 3474 (+47 outfits added by the 3454 -> 3474 patch, none removed).
+- `open_chest_scan.py` scans classes in parallel (`--jobs`, default 4) so a post-patch refresh
+  takes a few minutes instead of ten or more.
 - `partcut_recut.py` no longer rewrites non-UTF-8 bytes or line endings in
   `partcutdesc.xml` (the live file contains a 0x8c byte).
 - Not detected: windows made by texture alpha / painted skin, and `event_costume` PACs.
