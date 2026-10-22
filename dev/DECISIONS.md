@@ -67,6 +67,23 @@ advertised job, so it was dead weight in the menu.
 **Kept:** `_body_uncut` stays in `$Script:AioPatchFolderPrefixes` so recovery still purges
 leftover stages from older versions.
 
+## D-2026-10-21-J - Every apply starts from the vanilla meta
+
+**Decision:** `Ensure-VanillaMeta` runs at the start of Apply saved choices, Apply all and Meta
+Injector; when the live meta differs from the same-version vanilla snapshot it runs the existing
+restore (`vanilla_restore.py restore --apply`, which also removes the injected PAZ files).
+
+**Why:** measured 2026-10-21. A second apply on an injected meta made the body-size patcher read
+its own earlier edits ("already allow the range", 0 files staged); the injector then rewrote
+PAD61337-61354 while the meta still referenced the old PAD61354 for 27 body-size entries. Content
+check: exactly those 27 blocks held garbage, all other 2,132 injected blocks were intact. The
+launcher's own verify passed because it only checks archive bounds, not content.
+
+**Supersedes:** the earlier rule that a modified meta must never block reinjection. It still does
+not block: it is restored and the complete stage is injected again.
+
+**Not covered:** the single-generator menu items still read the live meta.
+
 ## D-2026-10-13-I - Resume per-outfit uncut as "Open-chest outfits", detected from meshes
 
 **Decision:** Un-shelve the per-outfit uncut. Ship it as an opt-in setting (`openChestUncut`:

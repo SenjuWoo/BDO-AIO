@@ -16,6 +16,18 @@
 - Unverified: newer Meta Injector / PartCutGen / Midnight versions (search and Undertow page failed).
 - Gate unchanged: the user's in-game run (see 2026-10-13 below). Release stays gated on it.
 
+## 2026-10-21 (later) - game refused to start after the second apply; fixed
+
+- First apply (open chest Off) and screenshots were fine. Second apply (Window) injected, verify
+  passed, but the game closed: "file corruption in PAD61354.PAZ". Cause and evidence in
+  D-2026-10-21-J. 27 body-size entries pointed at overwritten data.
+- Recovery done with the app's own restore: vanilla 3474 meta restored from the AIO snapshot,
+  19 injected PAZ removed (1.65 GB), verify passed. Beauty Album presets copied to
+  `backup\Customization-20261021-230331` first. The game is vanilla again; mods are NOT live.
+- Code: `Ensure-VanillaMeta` guard + tests (`test_meta_inject_launcher.ps1`).
+- Next: the user runs Apply saved choices once (Window), tests in game. Window uncut counts per
+  class are in the 2026-10-21 operation log (e.g. pew selected 57, uncut 86).
+
 ## 2026-10-13 - open-chest outfits (2.6.0 development, branch `feat/open-chest-uncut`)
 
 Shelved per-outfit work resumed and implemented: see [OPEN-CHEST.md](OPEN-CHEST.md) and

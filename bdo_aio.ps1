@@ -2088,6 +2088,29 @@ function Test-BdoToolkitInstalled {
     return (Test-Path -LiteralPath $local)
 }
 
+function Ensure-VanillaMeta {
+    <#
+      Every generator reads the LIVE meta, and Meta Injector reuses archive numbers. Run on a meta
+      that is already injected, the generators see their own earlier edits (body size staged 0
+      files) and the injector then rewrites archives the old meta still points into. Measured
+      2026-10-21: 27 body-size entries pointed into a rewritten PAD61354.PAZ and the game closed
+      "due to file corruption". Every apply therefore starts from the same-version vanilla meta.
+    #>
+    $rep = Get-PazStatusReport -PazFolder ([string]$Script:Config.pazFolder)
+    if (-not $rep) {
+        Write-Warn 'Could not read the meta state; continuing without the vanilla-baseline check.'
+        return $true
+    }
+    if ([string]$rep.meta.state -ne 'MODDED') { return $true }
+    Write-Warn 'The live meta is already injected. Restoring the same-version vanilla meta first so this apply starts clean.'
+    if (Invoke-VanillaRestoreTool @('restore', '--apply')) {
+        Write-Ok 'Vanilla meta restored.'
+        return $true
+    }
+    Write-Err 'Could not restore the vanilla meta. Nothing was applied.'
+    return $false
+}
+
 function Deploy-Midnight {
     param([switch]$NoPrompt)
     if (-not (Test-BdoToolsIdle)) { Pause-Any; return $false }
@@ -2276,8 +2299,9 @@ function Run-MetaInjector {
     }
     if (-not (Test-Path -LiteralPath $source)) { Write-Err ("Missing: " + $source); Pause-Any; return $false }
 
-    # A modified meta cannot tell us whether the user's choices changed.
-    # Do not block reinjection or silently reuse a stage on that signal alone.
+    if (-not (Ensure-VanillaMeta)) { Pause-Any; return $false }
+    # A modified meta cannot tell us whether the user's choices changed, so it never blocks
+    # reinjection: the guard above restores vanilla and the complete stage is injected again.
     $runId = [guid]::NewGuid().ToString('N')
     $reportDir = Join-Path $Script:Root 'logs'
     $reportPath = Join-Path $reportDir ('meta-inject-' + $runId + '.json')
@@ -2433,6 +2457,7 @@ function Apply-AllRestoredChoices {
     $paz = [string]$Script:Config.pazFolder
     $ftp = Join-Path $paz 'files_to_patch'
     if (-not (Test-Path $ftp)) { New-Item -ItemType Directory -Path $ftp -Force | Out-Null }
+    if (-not (Ensure-VanillaMeta)) { if (-not $NoPrompt) { Pause-Any }; return $false }
     # Rebuild the complete selected set: otherwise disabled options remain staged.
     # Keep previous generated packages outside the injector's input for recovery.
     [void](Clear-AioGenerated -Archive)
@@ -2969,6 +2994,7 @@ function Run-FullWizard {
         if (-not (Test-IsPazFolder $Script:Config.pazFolder)) { Write-Err 'Set PAZ first.'; Pause-Any; return $false }
     }
     if (-not $NoPrompt -and (Read-YesNo 'Change options before applying?' $false)) { Configure-ModChoices }
+    if (-not (Ensure-VanillaMeta)) { Pause-Any; return $false }
     if (-not (Deploy-Midnight -NoPrompt:$NoPrompt)) { return $false }
     if (-not (Apply-AllRestoredChoices -NoPrompt)) { Pause-Any; return $false }
     if (-not (Run-PartCutGen)) { return $false }

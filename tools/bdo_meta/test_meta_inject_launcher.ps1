@@ -79,3 +79,57 @@ try {
         Remove-Item -LiteralPath $tempRoot -Recurse -Force
     }
 }
+
+# Ensure-VanillaMeta: an already-injected meta must be restored to vanilla before any generator or
+# injector runs. Measured 2026-10-21: re-injecting over an injected meta left 27 body-size entries
+# pointing into a rewritten archive, and the game refused to start ("file corruption").
+$guardAst = $ast.Find({
+    param($node)
+    $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+        $node.Name -eq 'Ensure-VanillaMeta'
+}, $true)
+if (-not $guardAst) { throw 'Ensure-VanillaMeta was not found.' }
+Invoke-Expression $guardAst.Extent.Text
+
+$Script:Config = [pscustomobject]@{ pazFolder = 'X:\paz' }
+function Write-Warn([string]$Message) {}
+function Write-Ok([string]$Message) {}
+function Write-Err([string]$Message) {}
+$Script:RestoreCalls = New-Object System.Collections.Generic.List[string]
+$Script:RestoreResult = $true
+function Invoke-VanillaRestoreTool { param([string[]]$ToolArgs) $Script:RestoreCalls.Add($ToolArgs -join ' '); return $Script:RestoreResult }
+function Get-PazStatusReport { param([string]$PazFolder) return $Script:FakeReport }
+
+$Script:FakeReport = [pscustomobject]@{ meta = [pscustomobject]@{ state = 'RESTORED' } }
+if (-not (Ensure-VanillaMeta) -or $Script:RestoreCalls.Count -ne 0) { throw 'A vanilla meta must pass without a restore.' }
+$Script:FakeReport = [pscustomobject]@{ meta = [pscustomobject]@{ state = 'STALE_BACKUP' } }
+if (-not (Ensure-VanillaMeta) -or $Script:RestoreCalls.Count -ne 0) { throw 'A stale snapshot is not an injected meta and must not trigger a restore.' }
+$Script:FakeReport = $null
+if (-not (Ensure-VanillaMeta) -or $Script:RestoreCalls.Count -ne 0) { throw 'An unreadable state must not block or restore.' }
+$Script:FakeReport = [pscustomobject]@{ meta = [pscustomobject]@{ state = 'MODDED' } }
+if (-not (Ensure-VanillaMeta)) { throw 'A modded meta must be restored and then pass.' }
+if ($Script:RestoreCalls.Count -ne 1 -or $Script:RestoreCalls[0] -ne 'restore --apply') { throw "Unexpected restore call: $($Script:RestoreCalls -join '|')" }
+$Script:RestoreResult = $false
+if (Ensure-VanillaMeta) { throw 'A failed restore must stop the apply.' }
+Write-Host 'PASS: an injected meta is restored to vanilla before applying; a failed restore stops the run.'
+
+# Every entry point that generates or injects must call the guard before its first meta read/write.
+function Get-FunctionText([string]$Name) {
+    $node = $ast.Find({
+        param($n)
+        $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $Name
+    }, $true)
+    if (-not $node) { throw "$Name was not found." }
+    return $node.Extent.Text
+}
+foreach ($case in @(
+    @{ Fn = 'Run-FullWizard'; Before = 'Deploy-Midnight' },
+    @{ Fn = 'Apply-AllRestoredChoices'; Before = 'Clear-AioGenerated' },
+    @{ Fn = 'Run-MetaInjector'; Before = "Invoke-VanillaRestoreTool @('backup')" }
+)) {
+    $text = Get-FunctionText $case.Fn
+    $guard = $text.IndexOf('Ensure-VanillaMeta')
+    $first = $text.IndexOf($case.Before)
+    if ($guard -lt 0 -or $first -lt 0 -or $guard -gt $first) { throw "$($case.Fn) must call Ensure-VanillaMeta before $($case.Before)." }
+}
+Write-Host 'PASS: the wizard, apply-all and Meta Injector all restore vanilla before they generate or inject.'

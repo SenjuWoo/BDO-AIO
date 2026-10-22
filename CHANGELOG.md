@@ -12,6 +12,10 @@
   between classes). Outfits staged by Midnight XYZW are skipped. Re-running is idempotent.
 - `open_chest_scan.py` regenerates the list after a client patch (needs numpy). Tops added
   by a patch keep the vanilla cut until then.
+- Fixed: applying a second time over an already-injected meta could leave entries pointing into
+  archives the second run rewrote, and the game closed with "file corruption in PAD61354.PAZ".
+  Every apply (Apply saved choices, Apply all, Meta Injector) now restores the same-version
+  vanilla meta first, so generators read stock data and the injector starts clean.
 - The open-chest step now warns when the shipped list was scanned on an older client than the
   one installed (new outfits keep the vanilla cut until the list is refreshed). The list is
   rescanned on client 3474 (+47 outfits added by the 3454 -> 3474 patch, none removed).
