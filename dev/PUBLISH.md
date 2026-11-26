@@ -33,7 +33,7 @@
 From the parent of `BDO-AIO`:
 
 ```bat
-7z a -t7z -mx=5 BDO-AIO-v1.0.0.7z BDO-AIO\*
+7z a -t7z -mx=5 BDO-AIO-v1.0.0.7z BDO-AIO\* -x!BDO-AIO\.github\presentation
 ```
 
 Or Windows:

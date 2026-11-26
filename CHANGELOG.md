@@ -1,3 +1,17 @@
+## Unreleased - README and maintainer docs
+
+- README rebuilt around a cover image, real dashboard renders from the UI test
+  harness (fixture data, no game writes) and a captured run of the regression
+  suites plus a read-only GameOption preview. The detailed dashboard walk-through
+  moved to `docs/DASHBOARD.md`. The README's "latest changelog" block had the 2.4.2
+  notes under a 2.5.0 heading; it now summarises each release correctly.
+- README images live in `.github/presentation/`; the 7z commands in `dev/BACKUP.md`
+  and `dev/PUBLISH.md` exclude that folder from the full offline archive.
+- Credits and maintainer commands now use the current GitHub owner, SenjuWoo
+  (`CREDITS.md`, `gh release` commands in `dev/` and the 2026-08-09 plan).
+- Maintainer notes no longer name a local backup drive.
+- No script, pack or patch behaviour changed.
+
 ## 2.5.0 - Native dashboard and Obsidian & Gold themes
 
 - Obsidian & Gold dashboard: Dark default, dimmer Night and warm Light palettes.

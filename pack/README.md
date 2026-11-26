@@ -9,7 +9,7 @@ This folder is **required** for menu options that deploy Midnight, run PartCutGe
 | Git **source tree** (`main`) | **No** — ignored on purpose (~1.8 GB, 40k+ files) |
 | GitHub **Releases** `BDO-AIO-v*-full.7z` | **Yes** (when that release uploaded a full archive) |
 | Your local machine | Should be yes if you installed the full offline package |
-| `Z:\Backup\BDO-mods-assets\` | Secondary backup of tools + older packs / full 7z |
+| `<offline backup>\BDO-mods-assets\` | Secondary backup of tools + older packs / full 7z |
 
 **Ignoring in git ≠ deleting.** It only stops multi-gigabyte binaries from living in every git commit/clone.
 
@@ -34,7 +34,7 @@ Typical source: Midnight / heisha PAZ release (e.g. 0.4.x with Seraph).
 
 ## After a source-only clone
 
-1. Download the newest **`BDO-AIO-v*-full.7z`** from Releases, **or** restore from `Z:\Backup\…`.
+1. Download the newest **`BDO-AIO-v*-full.7z`** from Releases, **or** restore from your offline backup.
 2. Extract so files land **inside** `pack\` (not a nested random folder name).
 3. Run `START.bat` → menu **9** to verify (~1.5–2 GB, thousands of files).
 

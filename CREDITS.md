@@ -12,11 +12,11 @@ If you are an original author and want a credit corrected, expanded, or removed 
 
 | Component | Credit |
 |-----------|--------|
-| `START.bat`, `bdo_aio.ps1` menu / wizard / restore flow | **ShugokiFable** (package author) |
-| `tools/bdo_meta/*` helpers (body size, pubic apply, genital apply, inject stage builder, GameOption merge, PAZ scan, vanilla restore, etc.) | **ShugokiFable** (package author), built on top of community formats and restored workflows |
-| Remastered GameOption merge patches (`graphics/*.patch`) | **ShugokiFable** (cleaned to real BDO keys only) |
-| `graphics/nvidia/Black_Desert_Max_Quality.nip` | **ShugokiFable** (NVIDIA driver profile for `blackdesert64.exe`) |
-| Docs (`README`, `DESIGN`, `VALIDATION`, feature labels, ecosystem notes) | **ShugokiFable** |
+| `START.bat`, `bdo_aio.ps1` menu / wizard / restore flow | **SenjuWoo** (package author) |
+| `tools/bdo_meta/*` helpers (body size, pubic apply, genital apply, inject stage builder, GameOption merge, PAZ scan, vanilla restore, etc.) | **SenjuWoo** (package author), built on top of community formats and restored workflows |
+| Remastered GameOption merge patches (`graphics/*.patch`) | **SenjuWoo** (cleaned to real BDO keys only) |
+| `graphics/nvidia/Black_Desert_Max_Quality.nip` | **SenjuWoo** (NVIDIA driver profile for `blackdesert64.exe`) |
+| Docs (`README`, `DESIGN`, `VALIDATION`, feature labels, ecosystem notes) | **SenjuWoo** |
 
 ---
 

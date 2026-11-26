@@ -10,7 +10,7 @@ logs/
 # This is intentional so clones stay small. The pack is NOT discarded:
 #   - local working copy: pack\
 #   - cloud backup: GitHub Releases BDO-AIO-v*-full.7z
-#   - disk backup: Z:\Backup\BDO-mods-assets\
+#   - disk backup: an offline copy of BDO-mods-assets\
 # See BACKUP.md and pack/README.md.
 pack/**
 !pack/README.md

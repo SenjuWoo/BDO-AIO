@@ -48,7 +48,7 @@ explicit user runtime test and is not claimed as automated proof.
 | Asset | `BDO-AIO-v2.4.2-full.7z` - 207,272,976 bytes, 42,146 files |
 | sha256 | `d95e54464a4f3a93917e63e2732d54d7f0db9f51b066065896d84cd6491b6cfd` |
 | Verified | built / published / `.sha256` all agree; archive passes `7z t` |
-| Backup | `Z:\Backup\BDO-mods-assets\BDO-AIO-v2.4.2-full.7z` |
+| Backup | `<offline backup>\BDO-mods-assets\BDO-AIO-v2.4.2-full.7z` |
 | README | bumped to v2.4.2 |
 
 Archive excludes `config.json` (machine-specific), `backup/`, `__pycache__`, `.git`,

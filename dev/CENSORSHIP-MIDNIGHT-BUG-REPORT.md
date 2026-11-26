@@ -4,7 +4,7 @@
 **Project:** `%USERPROFILE%\Documents\Apps\BDO-AIO`
 **Game PAZ:** `C:\Program Files (x86)\Steam\steamapps\common\Black Desert Online\PAZ`  
 **Code version at report time:** **2.1.5** (genital underwear fix local; censorship still broken)  
-**Repo / context:** ShugokiFable/BDO-AIO (user machine)  
+**Repo / context:** SenjuWoo/BDO-AIO (user machine)  
 **Player symptom:** Under skirts / outfits, **lower body empty** — no butt, no crotch/vagina mesh, **thighs / “slot 9” invisible**. Boots and upper pieces often still visible. Looks like a **geometry hole / cull**, not a missing texture tint.
 
 **Primary test class/outfit:** Female **Ranger (`pew`)** with a green skirt “Looks” outfit that has **baked-in panty/shorts** under the skirt. User wanted: shorts gone **and** nude body (ass/pussy) visible under the skirt.

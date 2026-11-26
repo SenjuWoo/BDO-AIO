@@ -359,7 +359,7 @@ git commit -m "docs: prepare BDO-AIO 2.4.0"
 
 **Files:**
 - Sync changed tracked product files into: `%USERPROFILE%\Documents\Apps\BDO-AIO`
-- Create one release asset under: `Z:\Backup\BDO-mods-assets`
+- Create one release asset under: `<offline backup>\BDO-mods-assets`
 - Update after publication: `dev/PUBLISH-STATUS.md`
 
 **Interfaces:**
@@ -372,7 +372,7 @@ git commit -m "docs: prepare BDO-AIO 2.4.0"
 git status --short --branch
 git log -5 --oneline --decorate
 gh auth status
-gh release view v2.4.0 -R ShugokiFable/BDO-AIO
+gh release view v2.4.0 -R SenjuWoo/BDO-AIO
 ```
 
 Expected: working tree clean; `v2.4.0` release/tag absent; authentication valid. Do not overwrite an unexpected existing tag or release.
@@ -383,14 +383,14 @@ Copy only the files changed for v2.4.0 from the authoritative repo into `%USERPR
 
 - [ ] **Step 3: Build the single full archive**
 
-Create `Z:\Backup\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z` from the existing installed AIO folder, excluding `config.json`, backups, logs, caches, personal presets, and generated/live patch content. Create `BDO-AIO-v2.4.0-full.7z.sha256` beside it.
+Create `<offline backup>\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z` from the existing installed AIO folder, excluding `config.json`, backups, logs, caches, personal presets, and generated/live patch content. Create `BDO-AIO-v2.4.0-full.7z.sha256` beside it.
 
 - [ ] **Step 4: Inspect archive contents and checksum**
 
 ```powershell
-7z t 'Z:\Backup\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z'
-7z l 'Z:\Backup\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z'
-Get-FileHash -Algorithm SHA256 'Z:\Backup\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z'
+7z t '<offline backup>\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z'
+7z l '<offline backup>\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z'
+Get-FileHash -Algorithm SHA256 '<offline backup>\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z'
 ```
 
 Confirm root layout, required bundled tools/pack, absence of personal content, and sidecar equality.
@@ -401,7 +401,7 @@ Confirm root layout, required bundled tools/pack, absence of personal content, a
 git push origin main
 git tag -a v2.4.0 -m "BDO-AIO v2.4.0"
 git push origin v2.4.0
-gh release create v2.4.0 'Z:\Backup\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z' 'Z:\Backup\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z.sha256' --repo ShugokiFable/BDO-AIO --title 'BDO-AIO v2.4.0' --notes-file 'docs/releases/v2.4.0.md'
+gh release create v2.4.0 '<offline backup>\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z' '<offline backup>\BDO-mods-assets\BDO-AIO-v2.4.0-full.7z.sha256' --repo SenjuWoo/BDO-AIO --title 'BDO-AIO v2.4.0' --notes-file 'docs/releases/v2.4.0.md'
 ```
 
 Release notes must summarize the five-region matrix, breast axis guidance, migration, restore requirement, and runtime-test caveat.

@@ -107,7 +107,7 @@ Do not push, tag or publish until the requested edit/review cycle is finished.
 - The dashboard suite was rerun after four stale verifier processes were closed and
   passed with exit code 0. The shared operation mutex remains intentionally guarded.
 - Local preflight archive retained at
-  `Z:\Backup\Ai documentation\BDO-AIO-preflight-2.4.2-full-clean.7z`; this is not
+  `<offline backup>\BDO-AIO-preflight-2.4.2-full-clean.7z`; this is not
   a public release artifact.
 - With publication authorization: final commit, push, successful CI on that exact
   SHA, package/tag/release from it, then download and verify the published bytes.

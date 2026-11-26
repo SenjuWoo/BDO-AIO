@@ -313,7 +313,7 @@ outfit combination has been visually tested. No publication, push or release was
   full `pack\` and experimental payload. It contained **42,155** files and
   **2,317,060,687** uncompressed bytes. Required source-only files including `LICENSE`,
   `SECURITY.md` and CI metadata were present; forbidden local artifacts numbered zero.
-- Local archive: `Z:\Backup\Ai documentation\BDO-AIO-preflight-2.4.2-full-clean.7z`
+- Local archive: `<offline backup>\BDO-AIO-preflight-2.4.2-full-clean.7z`
   (**231,649,806 bytes**). `7z t` passed for all 42,155 entries with zero forbidden
   archive paths.
 - Fresh extraction into a path containing spaces and Unicode restored all 42,155 files.

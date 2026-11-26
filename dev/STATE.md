@@ -1,5 +1,14 @@
 # BDO-AIO state
 
+## Repository presentation pass - 2026-11-25
+
+README, credits and maintainer docs only; no script, pack or patch change, no release.
+Baseline on `main` before the pass: 130 Python tests OK (6 skipped), all ten Windows
+PowerShell suites, syntax gate and PSScriptAnalyzer clean. README images are in
+`.github/presentation/` and excluded from the 7z commands. The social preview image
+(`.github/presentation/social-preview.png`) still needs uploading in the repository
+settings.
+
 ## Current review checkpoint — 2026-09-17
 
 See [REVIEW-RESUME.md](REVIEW-RESUME.md) for current review evidence and limits.
@@ -36,7 +45,7 @@ Full-install synchronization and read-only launch checks are recorded in
 `VALIDATION.md`. Keyboard/DPI/accessibility exercise and broader class/outfit coverage
 remain separate from this successful selected-setup test. No preview release artifact
 has been published. A local clean full-pack preflight archive is retained at
-`Z:\Backup\Ai documentation\BDO-AIO-preflight-2.4.2-full-clean.7z`; Body UNCUT
+`<offline backup>\BDO-AIO-preflight-2.4.2-full-clean.7z`; Body UNCUT
 remains shelved research.
 
 ## Historical observation below — not current game or release state

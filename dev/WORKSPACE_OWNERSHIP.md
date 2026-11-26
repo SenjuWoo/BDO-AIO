@@ -10,7 +10,7 @@ Do not create release archives, preflight copies, version folders or developer
 backup snapshots unless explicitly requested. Temporary verification extractions
 must be removed after use. Preserve personal config, Customization presets,
 pack assets, game PAZ, live staging and game saves. Reference assets under
-`Z:/Backup/BDO-mods-assets` are not app-output storage.
+`<offline backup>/BDO-mods-assets` are not app-output storage.
 
 Synchronize verified files through a scoped allowlist without copying config or
 creating another backup set. Machine-local paths do not belong in shipped defaults.

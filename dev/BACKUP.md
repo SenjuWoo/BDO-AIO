@@ -17,7 +17,7 @@ The same idea applies to bulky **OptiScaler / Streamline** binaries under `exper
 |------|------|
 | `%USERPROFILE%\Documents\Apps\BDO-AIO\` | **Working tree** (scripts + full `pack\` when installed) |
 | GitHub **Releases** | **Primary cloud backup** of the full offline zip (`*-full.7z` + `.sha256`) |
-| `Z:\Backup\BDO-mods-assets\` | **Secondary offline backup** (tools, heisha tree, older packs, full 7z copies) |
+| `<offline backup>\BDO-mods-assets\` | **Secondary offline backup** (tools, heisha tree, older packs, full 7z copies) |
 | Git `main` branch | Scripts + docs + many `tools/` assets — **not** a substitute for `pack\` |
 
 ### Known release assets
@@ -43,6 +43,7 @@ $seven = 'C:\Program Files\7-Zip\7z.exe'
   "-xr!__pycache__" `
   "-xr!*.pyc" `
   "-xr!.git" `
+  "-x!.github\presentation" `
   "-xr!files_to_patch"
 
 # `.claude` is machine-local tooling state. `backup\` may contain the user's
@@ -53,18 +54,18 @@ Get-FileHash $out -Algorithm SHA256 | ForEach-Object {
     Set-Content -Encoding ascii ($out + '.sha256')
 }
 
-Copy-Item $out, ($out + '.sha256') 'Z:\Backup\BDO-mods-assets\' -Force
+Copy-Item $out, ($out + '.sha256') '<offline backup>\BDO-mods-assets\' -Force
 ```
 
 Upload both files to the matching GitHub release:
 
 ```powershell
-gh release upload "v$ver" $out ($out + '.sha256') -R ShugokiFable/BDO-AIO --clobber
+gh release upload "v$ver" $out ($out + '.sha256') -R SenjuWoo/BDO-AIO --clobber
 ```
 
 ## Recover if the working folder dies
 
-1. Download `BDO-AIO-v*-full.7z` from GitHub Releases **or** copy from `Z:\Backup\BDO-mods-assets\`.
+1. Download `BDO-AIO-v*-full.7z` from GitHub Releases **or** copy from `<offline backup>\BDO-mods-assets\`.
 2. Extract to e.g. `Documents\Apps\BDO-AIO\`.
 3. Run menu **9** (verify pack integrity).
 4. Optionally re-clone scripts from git and re-copy `pack\` from the archive if you prefer a hybrid layout.
